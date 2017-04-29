@@ -184,6 +184,12 @@ class Connection:
             task.cancel()
             await task
 
+    async def send(self, text: str) -> None:
+        assert self._connected
+        assert self._writer
+        self._writer.write((text + '\r\n').encode('latin1'))
+        await self._writer.drain()
+
     async def _looped(self, func: Callable[[], Awaitable[None]]) -> None:
         def disconnect(reason: str) -> None:
             # notify only once
@@ -230,7 +236,7 @@ class Connection:
             await asyncio.sleep(SHORT_POLL_INTERVAL)
             return
         assert self._reader
-        line = (await self._reader.readline()).decode('latin-1').rstrip('\r\n')
+        line = (await self._reader.readline()).decode('latin1').rstrip('\r\n')
         if not line:
             raise ConnectionResetError()
         if line == 'REFRESH':

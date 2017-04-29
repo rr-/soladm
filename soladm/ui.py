@@ -5,6 +5,22 @@ import urwid_readline
 from soladm import net
 
 
+class CommandInput(urwid_readline.ReadlineEdit):
+    signals = ['accept']
+
+    def keypress(self, size: Tuple[int, int], key: str) -> Optional[str]:
+        if key == 'enter':
+            self._accept()
+        return super().keypress(size, key)
+
+    def _accept(self) -> None:
+        text = self.text.strip()
+        if not text:
+            return
+        self.set_edit_text('')
+        urwid.signals.emit_signal(self, 'accept', text)
+
+
 class ExtendedListBox(urwid.ListBox):
     def __init__(self, body: urwid.ListWalker) -> None:
         super().__init__(body)
@@ -18,7 +34,7 @@ class ExtendedListBox(urwid.ListBox):
 class MainWidget(urwid.Pile):
     def __init__(self) -> None:
         self.log_box = ExtendedListBox(urwid.SimpleListWalker([]))
-        self.input_box = urwid_readline.ReadlineEdit('', wrap=urwid.CLIP)
+        self.input_box = CommandInput('', wrap=urwid.CLIP)
         super().__init__([self.log_box, (urwid.PACK, self.input_box)])
         self.set_focus(1)
 
@@ -33,14 +49,16 @@ class MainWidget(urwid.Pile):
 
 class Ui:
     def __init__(self, connection: net.Connection) -> None:
-        self.connection = connection
-        self.connection.on_connect.append(self._on_connect)
-        self.connection.on_disconnect.append(self._on_disconnect)
-        self.connection.on_message.append(self._on_message)
-        self.connection.on_refresh.append(self._on_refresh)
-        self.connection.on_exception.append(self._on_exception)
+        self._connection = connection
+        self._connection.on_connect.append(self._on_connect)
+        self._connection.on_disconnect.append(self._on_disconnect)
+        self._connection.on_message.append(self._on_message)
+        self._connection.on_refresh.append(self._on_refresh)
+        self._connection.on_exception.append(self._on_exception)
 
         self._main_widget = MainWidget()
+        urwid.signals.connect_signal(
+            self._main_widget.input_box, 'accept', self._command_accept)
         self._loop = urwid.MainLoop(
             self._main_widget, event_loop=urwid.AsyncioEventLoop())
         self._loop.screen.set_terminal_properties(256)
@@ -51,20 +69,24 @@ class Ui:
     def stop(self) -> None:
         self._loop.stop()
 
+    def _command_accept(self, text: str) -> None:
+        asyncio.ensure_future(self._connection.send(text))
+
     def _on_connect(self) -> None:
-        self._log('Connected')
+        self._log('-*- Connected')
 
     def _on_disconnect(self, reason: str) -> None:
-        self._log('Disconnected ({})'.format(reason))
+        self._log('-*- Disconnected ({})'.format(reason))
 
     def _on_message(self, message: str) -> None:
-        self._log('Message received: {}'.format(message))
+        self._log(message)
 
     def _on_refresh(self, game_info: net.GameInfo) -> None:
-        self._log('(Refresh) {}'.format(game_info.map_name))
+        self._log('-*- Refresh: {}, {} players'.format(
+            game_info.map_name, len(game_info.players)))
 
     def _on_exception(self, exception: Exception) -> None:
-        self._log('Exception: {}'.format(exception))
+        self._log('-*- Exception: {}'.format(exception))
 
     def _log(self, text: str) -> None:
         self._main_widget.log_box.body.append(urwid.Text(text))
