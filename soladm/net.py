@@ -185,31 +185,26 @@ class Connection:
         self._writer: Optional[asyncio.StreamWriter] = None
         self._tasks: List[asyncio.Future] = []
 
-    async def _connect(self, loop: asyncio.AbstractEventLoop) -> None:
-        try:
-            self._reader, self._writer = await asyncio.open_connection(
-                self.host, self.port, loop=loop)
-            self._writer.write('{}\r\n'.format(self.password).encode())
-            await self._writer.drain()
-            self.state.on_connect()
-            self._connected = True
-        except ConnectionResetError:
-            self._connected = False
-
     async def _looped(self, func: Callable[[], Awaitable[None]]) -> None:
         while True:
             try:
                 await func()
-            except ConnectionResetError as ex:
-                print(ex, func)
+            except ConnectionResetError:
                 self._connected = False
+                self._writer = self._reader = None
                 self.state.on_disconnect()
                 await asyncio.sleep(POLL_INTERVAL)
 
-    async def _reconnect(self, loop: asyncio.AbstractEventLoop) -> None:
-        await asyncio.sleep(POLL_INTERVAL)
-        if not self._connected:
-            await self._connect(loop)
+    async def _connect(self, loop: asyncio.AbstractEventLoop) -> None:
+        if self._connected:
+            await asyncio.sleep(POLL_INTERVAL)
+            return
+        self._reader, self._writer = (
+            await asyncio.open_connection(self.host, self.port, loop=loop))
+        self._writer.write('{}\r\n'.format(self.password).encode())
+        await self._writer.drain()
+        self.state.on_connect()
+        self._connected = True
 
     async def _refresh(self) -> None:
         if self._connected:
@@ -237,12 +232,11 @@ class Connection:
             self.state.on_message(line)
 
     async def connect(self, loop: asyncio.AbstractEventLoop) -> None:
-        await self._connect(loop)
         for task in self._tasks:
             task.cancel()
         self._tasks = [
             asyncio.ensure_future(
-                self._looped(lambda: self._reconnect(loop)), loop=loop),
+                self._looped(lambda: self._connect(loop)), loop=loop),
             asyncio.ensure_future(self._looped(self._refresh), loop=loop),
             asyncio.ensure_future(self._looped(self._read), loop=loop),
         ]
