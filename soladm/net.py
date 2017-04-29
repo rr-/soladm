@@ -185,15 +185,38 @@ class Connection:
         self._writer: Optional[asyncio.StreamWriter] = None
         self._tasks: List[asyncio.Future] = []
 
+    async def connect(self, loop: asyncio.AbstractEventLoop) -> None:
+        for task in self._tasks:
+            task.cancel()
+        self._tasks = [
+            asyncio.ensure_future(
+                self._looped(lambda: self._connect(loop)), loop=loop),
+            asyncio.ensure_future(self._looped(self._refresh), loop=loop),
+            asyncio.ensure_future(self._looped(self._read), loop=loop),
+        ]
+
+    async def close(self) -> None:
+        for task in self._tasks:
+            task.cancel()
+            await task
+
     async def _looped(self, func: Callable[[], Awaitable[None]]) -> None:
+        def disconnect() -> None:
+            # notify only once
+            if self._connected:
+                self._connected = False
+                self._writer = self._reader = None
+                self.state.on_disconnect()
+
         while True:
             try:
                 await func()
             except ConnectionResetError:
-                self._connected = False
-                self._writer = self._reader = None
-                self.state.on_disconnect()
+                disconnect()
                 await asyncio.sleep(POLL_INTERVAL)
+            except asyncio.CancelledError:
+                disconnect()
+                break
 
     async def _connect(self, loop: asyncio.AbstractEventLoop) -> None:
         if self._connected:
@@ -231,23 +254,13 @@ class Connection:
         else:
             self.state.on_message(line)
 
-    async def connect(self, loop: asyncio.AbstractEventLoop) -> None:
-        for task in self._tasks:
-            task.cancel()
-        self._tasks = [
-            asyncio.ensure_future(
-                self._looped(lambda: self._connect(loop)), loop=loop),
-            asyncio.ensure_future(self._looped(self._refresh), loop=loop),
-            asyncio.ensure_future(self._looped(self._read), loop=loop),
-        ]
-
 
 async def connect(
         loop: asyncio.AbstractEventLoop,
         host: str,
         port: int,
-        password: str) -> State:
+        password: str) -> Connection:
     state = State()
     connection = Connection(state, host, port, password)
     await connection.connect(loop)
-    return state
+    return connection
