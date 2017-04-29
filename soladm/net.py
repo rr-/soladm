@@ -5,7 +5,7 @@ from typing import Optional, List, Callable, Awaitable
 from enum import IntEnum
 
 
-POLL_INTERVAL = 0.5
+POLL_INTERVAL = 1
 
 
 def _read_u8(stream: io.BytesIO) -> int:
@@ -244,6 +244,8 @@ class Connection:
             return
         assert self._reader
         line = (await self._reader.readline()).decode('latin-1').rstrip('\r\n')
+        if not line:
+            raise ConnectionResetError()
         if line == 'REFRESH':
             # we're not interested in insufficient data
             _ = await self._reader.readexactly(1188)
