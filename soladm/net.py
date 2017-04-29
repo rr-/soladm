@@ -1,7 +1,11 @@
 import asyncio
 import io
 import struct
+from typing import Callable
 from enum import IntEnum
+
+
+POLL_INTERVAL = 0.5
 
 
 def _read_u8(stream) -> int:
@@ -163,54 +167,85 @@ class State:
         print(self.game_info.map_name)
 
 
+class Connection:
+    def __init__(
+            self, state: State, host: str, port: int, password: str) -> None:
+        self.state = state
+        self.host = host
+        self.port = port
+        self.password = password
+
+        self._connected = False
+        self._reader = None
+        self._writer = None
+        self._tasks = []
+
+    async def _connect(self, loop: asyncio.AbstractEventLoop) -> None:
+        try:
+            self._reader, self._writer = await asyncio.open_connection(
+                self.host, self.port, loop=loop)
+            self._writer.write('{}\r\n'.format(self.password).encode())
+            await self._writer.drain()
+            self.state.on_connect()
+            self._connected = True
+        except ConnectionResetError:
+            self._connected = False
+
+    async def _looped(self, func: Callable[[], None]) -> None:
+        while True:
+            try:
+                await func()
+            except ConnectionResetError as ex:
+                print(ex, func)
+                self._connected = False
+                self.state.on_disconnect()
+                await asyncio.sleep(POLL_INTERVAL)
+
+    async def _reconnect(self, loop: asyncio.AbstractEventLoop) -> None:
+        await asyncio.sleep(POLL_INTERVAL)
+        if not self._connected:
+            await self._connect(loop)
+
+    async def _refresh(self) -> None:
+        if self._connected:
+            self._writer.write('REFRESHX\r\n'.encode())
+            await self._writer.drain()
+            await asyncio.sleep(1)
+        else:
+            await asyncio.sleep(POLL_INTERVAL)
+
+    async def _read(self) -> None:
+        if not self._connected:
+            await asyncio.sleep(POLL_INTERVAL)
+            return
+
+        line = (
+            (await self._reader.readline())
+            .decode('latin-1')
+            .rstrip('\r\n'))
+        if line == 'REFRESH':
+            _ = await self._reader.readexactly(1188)
+            # we're not interested in insufficient data
+        elif line == 'REFRESHX':
+            data = await self._reader.readexactly(1992)
+            self.state.game_info.update_from_refreshx_packet(data)
+            self.state.on_refreshx()
+        else:
+            self.state.on_message(line)
+
+    async def connect(self, loop: asyncio.AbstractEventLoop) -> None:
+        await self._connect(loop)
+        for task in self._tasks:
+            task.cancel()
+        self._tasks = [
+            asyncio.ensure_future(
+                self._looped(lambda: self._reconnect(loop)), loop=loop),
+            asyncio.ensure_future(self._looped(self._refresh), loop=loop),
+            asyncio.ensure_future(self._looped(self._read), loop=loop),
+        ]
+
 async def connect(loop, host: str, port: int, password: str):
     state = State()
-
-    async def connect():
-        try:
-            reader, writer = await asyncio.open_connection(
-                host, port, loop=loop)
-
-            writer.write('{}\r\n'.format(password).encode())
-            await writer.drain()
-
-            state.on_connect()
-        except ConnectionResetError as ex:
-            state.on_disconnect()
-            await asyncio.sleep(1)
-            await connect()
-
-        async def looped(func) -> None:
-            while True:
-                try:
-                    await func()
-                except ConnectionResetError:
-                    state.on_disconnect()
-                    await asyncio.sleep(1)
-                    await connect()
-                    return
-
-        async def refresh() -> None:
-            writer.write('REFRESHX\r\n'.encode())
-            await writer.drain()
-            await asyncio.sleep(1)
-
-        async def read() -> None:
-            line = (
-                (await reader.readline())
-                .decode('latin-1')
-                .rstrip('\r\n'))
-            if line == 'REFRESH':
-                _ = await reader.readexactly(1188)
-                # we're not interested in insufficient data
-            elif line == 'REFRESHX':
-                data = await reader.readexactly(1992)
-                state.game_info.update_from_refreshx_packet(data)
-                state.on_refreshx()
-            else:
-                state.on_message(line)
-
-        asyncio.ensure_future(looped(refresh), loop=loop)
-        asyncio.ensure_future(looped(read), loop=loop)
-
-    await connect()
+    connection = Connection(state, host, port, password)
+    await connection.connect(loop)
+    return state
