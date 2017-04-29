@@ -19,9 +19,7 @@ def main() -> None:
     password: str = args.password or getpass('Enter password: ')
 
     loop = asyncio.get_event_loop()
-
-    connection = loop.run_until_complete(
-        net.connect(loop, host, port, password))
+    connection = loop.run_until_complete(net.connect(host, port, password))
     try:
         loop.run_forever()
     except KeyboardInterrupt:

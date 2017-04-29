@@ -185,13 +185,12 @@ class Connection:
         self._writer: Optional[asyncio.StreamWriter] = None
         self._tasks: List[asyncio.Future] = []
 
-    async def open(self, loop: asyncio.AbstractEventLoop) -> None:
+    async def open(self) -> None:
         assert not self._connected
         self._tasks = [
-            asyncio.ensure_future(
-                self._looped(lambda: self._connect(loop)), loop=loop),
-            asyncio.ensure_future(self._looped(self._refresh), loop=loop),
-            asyncio.ensure_future(self._looped(self._read), loop=loop),
+            asyncio.ensure_future(self._looped(self._connect)),
+            asyncio.ensure_future(self._looped(self._refresh)),
+            asyncio.ensure_future(self._looped(self._read)),
         ]
 
     async def close(self) -> None:
@@ -218,12 +217,12 @@ class Connection:
                 disconnect()
                 break
 
-    async def _connect(self, loop: asyncio.AbstractEventLoop) -> None:
+    async def _connect(self) -> None:
         if self._connected:
             await asyncio.sleep(POLL_INTERVAL)
             return
         self._reader, self._writer = (
-            await asyncio.open_connection(self.host, self.port, loop=loop))
+            await asyncio.open_connection(self.host, self.port))
         self._writer.write('{}\r\n'.format(self.password).encode())
         await self._writer.drain()
         self.state.on_connect()
@@ -257,12 +256,8 @@ class Connection:
             self.state.on_message(line)
 
 
-async def connect(
-        loop: asyncio.AbstractEventLoop,
-        host: str,
-        port: int,
-        password: str) -> Connection:
+async def connect(host: str, port: int, password: str) -> Connection:
     state = State()
     connection = Connection(state, host, port, password)
-    await connection.open(loop)
+    await connection.open()
     return connection
