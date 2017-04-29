@@ -185,9 +185,8 @@ class Connection:
         self._writer: Optional[asyncio.StreamWriter] = None
         self._tasks: List[asyncio.Future] = []
 
-    async def connect(self, loop: asyncio.AbstractEventLoop) -> None:
-        for task in self._tasks:
-            task.cancel()
+    async def open(self, loop: asyncio.AbstractEventLoop) -> None:
+        assert not self._connected
         self._tasks = [
             asyncio.ensure_future(
                 self._looped(lambda: self._connect(loop)), loop=loop),
@@ -196,6 +195,7 @@ class Connection:
         ]
 
     async def close(self) -> None:
+        assert self._connected
         for task in self._tasks:
             task.cancel()
             await task
@@ -262,5 +262,5 @@ async def connect(
         password: str) -> Connection:
     state = State()
     connection = Connection(state, host, port, password)
-    await connection.connect(loop)
+    await connection.open(loop)
     return connection
