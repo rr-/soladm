@@ -6,7 +6,8 @@ from enum import IntEnum
 from soladm import event
 
 
-POLL_INTERVAL = 1
+SHORT_POLL_INTERVAL = 0.1
+LONG_POLL_INTERVAL = 1
 
 
 def _read_u8(stream: io.BytesIO) -> int:
@@ -195,14 +196,14 @@ class Connection:
                 await func()
             except ConnectionResetError as ex:
                 disconnect('Connection reset')
-                await asyncio.sleep(POLL_INTERVAL)
+                await asyncio.sleep(LONG_POLL_INTERVAL)
             except asyncio.CancelledError:
                 disconnect('User cancel')
                 break
 
     async def _connect(self) -> None:
         if self._connected:
-            await asyncio.sleep(POLL_INTERVAL)
+            await asyncio.sleep(LONG_POLL_INTERVAL)
             return
         self._reader, self._writer = (
             await asyncio.open_connection(self.host, self.port))
@@ -218,11 +219,11 @@ class Connection:
             await self._writer.drain()
             await asyncio.sleep(1)
         else:
-            await asyncio.sleep(POLL_INTERVAL)
+            await asyncio.sleep(SHORT_POLL_INTERVAL)
 
     async def _read(self) -> None:
         if not self._connected:
-            await asyncio.sleep(POLL_INTERVAL)
+            await asyncio.sleep(SHORT_POLL_INTERVAL)
             return
         assert self._reader
         line = (await self._reader.readline()).decode('latin-1').rstrip('\r\n')
