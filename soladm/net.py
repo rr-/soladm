@@ -1,32 +1,37 @@
 import asyncio
 import io
 import struct
-from typing import Callable
+from typing import Optional, List, Callable, Awaitable
 from enum import IntEnum
 
 
 POLL_INTERVAL = 0.5
 
 
-def _read_u8(stream) -> int:
+def _read_u8(stream: io.BytesIO) -> int:
     return struct.unpack('<B', stream.read(1))[0]
 
-def _read_u16_le(stream) -> int:
+
+def _read_u16_le(stream: io.BytesIO) -> int:
     return struct.unpack('<H', stream.read(2))[0]
 
-def _read_u32_le(stream) -> int:
+
+def _read_u32_le(stream: io.BytesIO) -> int:
     return struct.unpack('<i', stream.read(4))[0]
 
-def _read_f32(stream) -> int:
+
+def _read_f32(stream: io.BytesIO) -> int:
     return struct.unpack('<f', stream.read(4))[0]
 
-def _read_bytes(stream, size: int) -> bytes:
+
+def _read_bytes(stream: io.BytesIO, size: int) -> bytes:
     return stream.read(size)
 
-def _read_var_str(stream, size: int) -> str:
-    len = _read_u8(stream)
-    assert len < size
-    return stream.read(size)[0:len].decode('latin1')
+
+def _read_var_str(stream: io.BytesIO, size: int) -> str:
+    length = _read_u8(stream)
+    assert length < size
+    return stream.read(size)[0:length].decode('latin1')
 
 
 class Point:
@@ -92,11 +97,11 @@ class GameInfo:
         self.next_map_name = ''
 
     @property
-    def players(self):
+    def players(self) -> List[PlayerInfo]:
         return [
             player
             for player in self._players
-            if player.team != UNASSIGNED]
+            if player.team != PlayerTeam.UNASSIGNED]
 
     def update_from_refreshx_packet(self, data: bytes) -> None:
         stream = io.BytesIO(data)
@@ -146,7 +151,7 @@ class GameInfo:
 
 
 class State:
-    def __init__(self):
+    def __init__(self) -> None:
         self.game_info = GameInfo()
 
     def on_connect(self) -> None:
@@ -176,9 +181,9 @@ class Connection:
         self.password = password
 
         self._connected = False
-        self._reader = None
-        self._writer = None
-        self._tasks = []
+        self._reader: Optional[asyncio.StreamReader] = None
+        self._writer: Optional[asyncio.StreamWriter] = None
+        self._tasks: List[asyncio.Future] = []
 
     async def _connect(self, loop: asyncio.AbstractEventLoop) -> None:
         try:
@@ -191,7 +196,7 @@ class Connection:
         except ConnectionResetError:
             self._connected = False
 
-    async def _looped(self, func: Callable[[], None]) -> None:
+    async def _looped(self, func: Callable[[], Awaitable[None]]) -> None:
         while True:
             try:
                 await func()
@@ -208,6 +213,7 @@ class Connection:
 
     async def _refresh(self) -> None:
         if self._connected:
+            assert self._writer
             self._writer.write('REFRESHX\r\n'.encode())
             await self._writer.drain()
             await asyncio.sleep(1)
@@ -218,14 +224,11 @@ class Connection:
         if not self._connected:
             await asyncio.sleep(POLL_INTERVAL)
             return
-
-        line = (
-            (await self._reader.readline())
-            .decode('latin-1')
-            .rstrip('\r\n'))
+        assert self._reader
+        line = (await self._reader.readline()).decode('latin-1').rstrip('\r\n')
         if line == 'REFRESH':
-            _ = await self._reader.readexactly(1188)
             # we're not interested in insufficient data
+            _ = await self._reader.readexactly(1188)
         elif line == 'REFRESHX':
             data = await self._reader.readexactly(1992)
             self.state.game_info.update_from_refreshx_packet(data)
@@ -244,7 +247,12 @@ class Connection:
             asyncio.ensure_future(self._looped(self._read), loop=loop),
         ]
 
-async def connect(loop, host: str, port: int, password: str):
+
+async def connect(
+        loop: asyncio.AbstractEventLoop,
+        host: str,
+        port: int,
+        password: str) -> State:
     state = State()
     connection = Connection(state, host, port, password)
     await connection.connect(loop)
