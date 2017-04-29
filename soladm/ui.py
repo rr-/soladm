@@ -38,6 +38,7 @@ class Ui:
         self.connection.on_disconnect.append(self._on_disconnect)
         self.connection.on_message.append(self._on_message)
         self.connection.on_refresh.append(self._on_refresh)
+        self.connection.on_exception.append(self._on_exception)
 
         self._main_widget = MainWidget()
         self._loop = urwid.MainLoop(
@@ -61,6 +62,9 @@ class Ui:
 
     def _on_refresh(self, game_info: net.GameInfo) -> None:
         self._log('(Refresh) {}'.format(game_info.map_name))
+
+    def _on_exception(self, exception: Exception) -> None:
+        self._log('Exception: {}'.format(exception))
 
     def _log(self, text: str) -> None:
         self._main_widget.log_box.body.append(urwid.Text(text))

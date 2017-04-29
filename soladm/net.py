@@ -168,6 +168,7 @@ class Connection:
         self.on_disconnect = event.EventHandler()
         self.on_message = event.EventHandler()
         self.on_refresh = event.EventHandler()
+        self.on_exception = event.EventHandler()
 
     async def open(self) -> None:
         assert not self._connected
@@ -200,6 +201,9 @@ class Connection:
             except asyncio.CancelledError:
                 disconnect('User cancel')
                 break
+            except Exception as ex:
+                self.on_exception(ex)
+                raise
 
     async def _connect(self) -> None:
         if self._connected:
