@@ -157,8 +157,8 @@ class State:
     def on_connect(self) -> None:
         print('Connected')
 
-    def on_disconnect(self) -> None:
-        print('Disconnected')
+    def on_disconnect(self, reason: str) -> None:
+        print('Disconnected ({})'.format(reason))
 
     def on_message(self, message: str) -> None:
         print('Message received', message)
@@ -200,21 +200,21 @@ class Connection:
             await task
 
     async def _looped(self, func: Callable[[], Awaitable[None]]) -> None:
-        def disconnect() -> None:
+        def disconnect(reason: str) -> None:
             # notify only once
             if self._connected:
                 self._connected = False
                 self._writer = self._reader = None
-                self.state.on_disconnect()
+                self.state.on_disconnect(reason)
 
         while True:
             try:
                 await func()
-            except ConnectionResetError:
-                disconnect()
+            except ConnectionResetError as ex:
+                disconnect('Connection reset')
                 await asyncio.sleep(POLL_INTERVAL)
             except asyncio.CancelledError:
-                disconnect()
+                disconnect('User cancel')
                 break
 
     async def _connect(self) -> None:
