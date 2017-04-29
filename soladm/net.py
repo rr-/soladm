@@ -180,36 +180,37 @@ async def connect(loop, host: str, port: int, password: str):
             await asyncio.sleep(1)
             await connect()
 
-        writer.write('REFRESHX\r\n'.encode())
-        await writer.drain()
-
-        async def read():
+        async def looped(func) -> None:
             while True:
                 try:
-                    line = (
-                        (await reader.readline())
-                        .decode('latin-1')
-                        .rstrip('\r\n'))
-                    if line == 'REFRESH':
-                        _ = await reader.readexactly(1188)
-                        # we're not interested in insufficient data
-                    elif line == 'REFRESHX':
-                        data = await reader.readexactly(1992)
-                        state.game_info.update_from_refreshx_packet(data)
-                        state.on_refreshx()
-                    else:
-                        state.on_message(line)
-                except ConnectionResetError as ex:
+                    await func()
+                except ConnectionResetError:
                     state.on_disconnect()
                     await asyncio.sleep(1)
                     await connect()
                     return
-                except Exception as ex:
-                    print(ex)
-                    await asyncio.sleep(1)
-                    await connect()
-                    return
 
-        asyncio.ensure_future(read(), loop=loop)
+        async def refresh() -> None:
+            writer.write('REFRESHX\r\n'.encode())
+            await writer.drain()
+            await asyncio.sleep(1)
+
+        async def read() -> None:
+            line = (
+                (await reader.readline())
+                .decode('latin-1')
+                .rstrip('\r\n'))
+            if line == 'REFRESH':
+                _ = await reader.readexactly(1188)
+                # we're not interested in insufficient data
+            elif line == 'REFRESHX':
+                data = await reader.readexactly(1992)
+                state.game_info.update_from_refreshx_packet(data)
+                state.on_refreshx()
+            else:
+                state.on_message(line)
+
+        asyncio.ensure_future(looped(refresh), loop=loop)
+        asyncio.ensure_future(looped(read), loop=loop)
 
     await connect()
