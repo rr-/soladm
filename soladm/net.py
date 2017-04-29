@@ -13,6 +13,9 @@ def _read_u16_le(stream) -> int:
 def _read_u32_le(stream) -> int:
     return struct.unpack('<i', stream.read(4))[0]
 
+def _read_f32(stream) -> int:
+    return struct.unpack('<f', stream.read(4))[0]
+
 def _read_bytes(stream, size: int) -> bytes:
     return stream.read(size)
 
@@ -20,6 +23,12 @@ def _read_var_str(stream, size: int) -> str:
     len = _read_u8(stream)
     assert len < size
     return stream.read(size)[0:len].decode('latin1')
+
+
+class Point:
+    def __init__(self) -> None:
+        self.x = 0
+        self.y = 0
 
 
 class PlayerTeam(IntEnum):
@@ -45,13 +54,16 @@ class GameMode(IntEnum):
 class PlayerInfo:
     def __init__(self) -> None:
         self.id = 0
+        self.hwid = b''
         self.name = ''
         self.team = PlayerTeam.NONE
         self.kills = 0
         self.caps = 0
+        self.caps = 0
         self.deaths = 0
         self.ping = 0
         self.ip = '0.0.0.0'
+        self.pos = Point()
 
 
 class GameInfo:
@@ -64,10 +76,16 @@ class GameInfo:
         }
         self.map_name = ''
         self.game_mode = GameMode.DeathMatch
-        self.current_time = 0
+        self.time_left = 0
         self.time_limit = 0
         self.score_limit = 0
-        self._players: List[PlayerInfo] = [PlayerInfo() for i in range(32)]
+        self._players = [PlayerInfo() for i in range(32)]
+        self.red_flag_pos = Point()
+        self.blue_flag_pos = Point()
+        self.max_players = 0
+        self.max_spectators = 0
+        self.game_passworded = False
+        self.next_map_name = ''
 
     @property
     def players(self):
@@ -76,23 +94,36 @@ class GameInfo:
             for player in self._players
             if player.team != UNASSIGNED]
 
-    def update_from_refresh_packet(self, data: bytes) -> None:
+    def update_from_refreshx_packet(self, data: bytes) -> None:
         stream = io.BytesIO(data)
         for i in range(32):
             self._players[i].name = _read_var_str(stream, 24)
+        for i in range(32):
+            self._players[i].hwid = _read_bytes(stream, 12)
         for i in range(32):
             self._players[i].team = PlayerTeam(_read_u8(stream))
         for i in range(32):
             self._players[i].kills = _read_u16_le(stream)
         for i in range(32):
+            self._players[i].caps = _read_u8(stream)
+        for i in range(32):
             self._players[i].deaths = _read_u16_le(stream)
         for i in range(32):
-            self._players[i].ping = _read_u8(stream)
+            self._players[i].ping = _read_u32_le(stream)
         for i in range(32):
             self._players[i].id = _read_u8(stream)
         for i in range(32):
             self._players[i].ip = '.'.join(
                 str(octet) for octet in [_read_u8(stream) for i in range(4)])
+        for i in range(32):
+            self._players[i].pos.x = _read_f32(stream)
+        for i in range(32):
+            self._players[i].pos.y = _read_f32(stream)
+
+        self.red_flag_pos.x = _read_f32(stream)
+        self.red_flag_pos.y = _read_f32(stream)
+        self.blue_flag_pos.x = _read_f32(stream)
+        self.blue_flag_pos.y = _read_f32(stream)
         for team in (
                 PlayerTeam.ALPHA,
                 PlayerTeam.BRAVO,
@@ -101,9 +132,13 @@ class GameInfo:
             self.scores[team] = _read_u16_le(stream)
         self.map_name = _read_var_str(stream, 16)
         self.time_limit = _read_u32_le(stream)
-        self.current_time = _read_u32_le(stream)
+        self.time_left = _read_u32_le(stream)
         self.score_limit = _read_u16_le(stream)
         self.game_mode = GameMode(_read_u8(stream))
+        self.max_players = _read_u8(stream)
+        self.max_spectators = _read_u8(stream)
+        self.game_passworded = bool(_read_u8(stream))
+        self.next_map_name = _read_var_str(stream, 16)
 
 
 class State:
@@ -123,8 +158,9 @@ class State:
         print('Refresh')
         print(self.game_info.map_name)
 
-    def on_refreshx(self, message: bytes) -> None:
-        print('Refresh x', message)
+    def on_refreshx(self) -> None:
+        print('Refresh x')
+        print(self.game_info.map_name)
 
 
 async def connect(loop, host: str, port: int, password: str):
@@ -144,7 +180,7 @@ async def connect(loop, host: str, port: int, password: str):
             await asyncio.sleep(1)
             await connect()
 
-        writer.write('REFRESH\r\n'.encode())
+        writer.write('REFRESHX\r\n'.encode())
         await writer.drain()
 
         async def read():
@@ -155,12 +191,12 @@ async def connect(loop, host: str, port: int, password: str):
                         .decode('latin-1')
                         .rstrip('\r\n'))
                     if line == 'REFRESH':
-                        data = await reader.read(1188)
-                        state.game_info.update_from_refresh_packet(data)
-                        state.on_refresh()
+                        _ = await reader.readexactly(1188)
+                        # we're not interested in insufficient data
                     elif line == 'REFRESHX':
-                        data = await reader.read(1992)
-                        state.on_refreshx(data)
+                        data = await reader.readexactly(1992)
+                        state.game_info.update_from_refreshx_packet(data)
+                        state.on_refreshx()
                     else:
                         state.on_message(line)
                 except ConnectionResetError as ex:
