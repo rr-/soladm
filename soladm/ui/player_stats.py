@@ -51,11 +51,11 @@ class PlayerStats(common.Table):
             self.ids[i].set_text(str(player.id))
             self.names[i].set_text(player.name)
             self.teams[i].set_text({
-                net.PlayerTeam.NONE: 'none',
-                net.PlayerTeam.ALPHA: 'alpha',
-                net.PlayerTeam.BRAVO: 'bravo',
-                net.PlayerTeam.CHARLIE: 'charlie',
-                net.PlayerTeam.DELTA: 'delta',
+                net.PlayerTeam.NONE:      'none',
+                net.PlayerTeam.ALPHA:     'alpha',
+                net.PlayerTeam.BRAVO:     'bravo',
+                net.PlayerTeam.CHARLIE:   'charlie',
+                net.PlayerTeam.DELTA:     'delta',
                 net.PlayerTeam.SPECTATOR: 'spectator',
             }[player.team])
             self.pings[i].set_text(str(player.ping))

@@ -18,10 +18,10 @@ class GameStats(common.Table):
         self.max_score = urwid.Text('')
         self.team_scores_header = urwid.Text('')
         self.team_scores = {
-            net.PlayerTeam.ALPHA: urwid.Text(''),
-            net.PlayerTeam.BRAVO: urwid.Text(''),
+            net.PlayerTeam.ALPHA:   urwid.Text(''),
+            net.PlayerTeam.BRAVO:   urwid.Text(''),
             net.PlayerTeam.CHARLIE: urwid.Text(''),
-            net.PlayerTeam.DELTA: urwid.Text(''),
+            net.PlayerTeam.DELTA:   urwid.Text(''),
         }
 
         basic_rows: List[Sequence[urwid.Widget]] = [
@@ -52,23 +52,23 @@ class GameStats(common.Table):
             self._shown_game_mode = game_info.game_mode
             self.clear_rows()
             self.add_rows({
-                net.GameMode.DeathMatch: self._no_teams_rows,
-                net.GameMode.PointMatch: self._no_teams_rows,
-                net.GameMode.TeamMatch: self._four_teams_rows,
+                net.GameMode.DeathMatch:     self._no_teams_rows,
+                net.GameMode.PointMatch:     self._no_teams_rows,
+                net.GameMode.TeamMatch:      self._four_teams_rows,
                 net.GameMode.CaptureTheFlag: self._two_teams_rows,
-                net.GameMode.RamboMatch: self._no_teams_rows,
-                net.GameMode.Infiltration: self._two_teams_rows,
-                net.GameMode.HoldTheFlag: self._two_teams_rows,
+                net.GameMode.RamboMatch:     self._no_teams_rows,
+                net.GameMode.Infiltration:   self._two_teams_rows,
+                net.GameMode.HoldTheFlag:    self._two_teams_rows,
             }[game_info.game_mode])
 
         self.game_mode.set_text({
-            net.GameMode.DeathMatch: 'DM',
-            net.GameMode.PointMatch: 'PM',
-            net.GameMode.TeamMatch:  'TM',
+            net.GameMode.DeathMatch:     'DM',
+            net.GameMode.PointMatch:     'PM',
+            net.GameMode.TeamMatch:      'TM',
             net.GameMode.CaptureTheFlag: 'CTF',
-            net.GameMode.RamboMatch: 'RM',
-            net.GameMode.Infiltration: 'INF',
-            net.GameMode.HoldTheFlag: 'HTF',
+            net.GameMode.RamboMatch:     'RM',
+            net.GameMode.Infiltration:   'INF',
+            net.GameMode.HoldTheFlag:    'HTF',
         }[game_info.game_mode])
         self.current_map_name.set_text(game_info.map_name)
         self.next_map_name.set_text(game_info.next_map_name)
