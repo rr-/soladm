@@ -10,11 +10,11 @@ from soladm.ui.player_stats import PlayerStats
 
 
 class MainWidget(urwid.Columns):
-    def __init__(self) -> None:
+    def __init__(self, game_info: net.GameInfo) -> None:
         self.stats_table = GameStats()
         self.players_table = PlayerStats()
         self.log_box = common.ExtendedListBox(urwid.SimpleListWalker([]))
-        self.input_box = CommandInput()
+        self.input_box = CommandInput(game_info)
         super().__init__([
             (
                 urwid.PACK,
@@ -53,7 +53,7 @@ class Ui:
         self._connection.on_exception.append(self._on_exception)
         self._refreshed = False
 
-        self._main_widget = MainWidget()
+        self._main_widget = MainWidget(self._connection.game_info)
         urwid.signals.connect_signal(
             self._main_widget.input_box, 'accept', self._command_accept)
         self._loop = urwid.MainLoop(
@@ -78,15 +78,15 @@ class Ui:
     def _on_message(self, message: str) -> None:
         self._log(message)
 
-    def _on_refresh(self, game_info: net.GameInfo) -> None:
-        self._main_widget.stats_table.update(game_info)
-        self._main_widget.players_table.update(game_info)
+    def _on_refresh(self) -> None:
+        self._main_widget.stats_table.update(self._connection.game_info)
+        self._main_widget.players_table.update(self._connection.game_info)
 
         if self._refreshed:
             return
         self._refreshed = True
         self._log('-*- Current players:')
-        for player in game_info.players:
+        for player in self._connection.game_info.players:
             fmt = '-*- {id}. {name} ({ip}, {hwid}, {kills}/{deaths})'
             if player.caps:
                 fmt += ' (+{caps} caps)'

@@ -159,7 +159,7 @@ class Connection:
         self.port = port
         self.password = password
 
-        self._game_info = GameInfo()
+        self.game_info = GameInfo()
         self._connected = False
         self._reader: Optional[asyncio.StreamReader] = None
         self._writer: Optional[asyncio.StreamWriter] = None
@@ -245,7 +245,7 @@ class Connection:
             _ = await self._reader.readexactly(1188)
         elif line == 'REFRESHX':
             data = await self._reader.readexactly(1992)
-            self._game_info.update_from_refreshx_packet(data)
-            self.on_refresh(self._game_info)
+            self.game_info.update_from_refreshx_packet(data)
+            self.on_refresh()
         else:
             self.on_message(line)
