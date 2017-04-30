@@ -153,6 +153,12 @@ class GameInfo:
         self.next_map_name = _read_var_str(stream, 16)
 
 
+class ConnectionState(IntEnum):
+    DISCONNECTED = 0
+    CONNECTING = 1
+    CONNECTED = 2
+
+
 class Connection:
     def __init__(self, host: str, port: int, password: str) -> None:
         self.host = host
@@ -172,7 +178,7 @@ class Connection:
         self.on_exception = event.EventHandler()
 
     async def open(self) -> None:
-        assert not self._connected
+        assert self._connected == ConnectionState.DISCONNECTED
         self._tasks = [
             asyncio.ensure_future(self._looped(self._connect)),
             asyncio.ensure_future(self._looped(self._refresh)),
@@ -180,13 +186,15 @@ class Connection:
         ]
 
     async def close(self) -> None:
-        assert self._connected
+        self._connected in (
+            ConnectionState.CONNECTED,
+            ConnectionState.CONNECTING)
         for task in self._tasks:
             task.cancel()
             await task
 
     async def send(self, text: str) -> None:
-        assert self._connected
+        assert self._connected == ConnectionState.CONNECTED
         assert self._writer
         self._writer.write((text + '\r\n').encode('latin1'))
         await self._writer.drain()
@@ -194,8 +202,8 @@ class Connection:
     async def _looped(self, func: Callable[[], Awaitable[None]]) -> None:
         def disconnect(reason: str) -> None:
             # notify only once
-            if self._connected:
-                self._connected = False
+            if self._connected != ConnectionState.DISCONNECTED:
+                self._connected = ConnectionState.DISCONNECTED
                 self._writer = self._reader = None
                 self.on_disconnect(reason)
 
@@ -216,27 +224,28 @@ class Connection:
                 raise
 
     async def _connect(self) -> None:
-        if self._connected:
+        if self._connected == ConnectionState.CONNECTED:
             await asyncio.sleep(LONG_POLL_INTERVAL)
             return
+        self._connected = ConnectionState.CONNECTING
         self._reader, self._writer = (
             await asyncio.open_connection(self.host, self.port))
         self._writer.write('{}\r\n'.format(self.password).encode())
         await self._writer.drain()
         self.on_connect()
-        self._connected = True
+        self._connected = ConnectionState.CONNECTED
 
     async def _refresh(self) -> None:
-        if self._connected:
-            assert self._writer
-            self._writer.write('REFRESHX\r\n'.encode())
-            await self._writer.drain()
-            await asyncio.sleep(1)
-        else:
+        if self._connected != ConnectionState.CONNECTED:
             await asyncio.sleep(SHORT_POLL_INTERVAL)
+            return
+        assert self._writer
+        self._writer.write('REFRESHX\r\n'.encode())
+        await self._writer.drain()
+        await asyncio.sleep(1)
 
     async def _read(self) -> None:
-        if not self._connected:
+        if self._connected != ConnectionState.CONNECTED:
             await asyncio.sleep(SHORT_POLL_INTERVAL)
             return
         assert self._reader
