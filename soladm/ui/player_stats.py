@@ -1,4 +1,4 @@
-from typing import Sequence, List
+from typing import Any, Sequence, List
 import urwid
 from soladm import net
 from soladm.ui import common
@@ -51,7 +51,10 @@ class PlayerStats(common.Table):
             self.add_row(self._header_row)
             self.add_rows(self._visible_rows)
 
-        for i, player in enumerate(game_info.players):
+        def player_sort(player: net.PlayerInfo) -> Any:
+            return (player.team, player.id)
+
+        for i, player in enumerate(sorted(game_info.players, key=player_sort)):
             self.ids[i].set_text(str(player.id))
             self.names[i].set_text(player.name)
             self.teams[i].set_text({
