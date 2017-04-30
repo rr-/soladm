@@ -23,6 +23,8 @@ class CommandInput(urwid_readline.ReadlineEdit):
             self._history_up()
         elif key == 'ctrl n' or key == 'down':
             self._history_down()
+        elif key == 'ctrl q':
+            raise KeyboardInterrupt()
         elif key == 'tab':
             self._cycle_autocomplete(1)
         elif key == 'shift tab':

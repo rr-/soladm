@@ -218,7 +218,7 @@ class Connection:
                 disconnect('Connection reset')
                 await asyncio.sleep(LONG_POLL_INTERVAL)
             except asyncio.CancelledError:
-                disconnect('User cancel')
+                disconnect('User exit')
                 break
             except Exception as ex:
                 self.on_exception(ex)
