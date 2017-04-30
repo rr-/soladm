@@ -1,5 +1,6 @@
 from typing import Tuple, Sequence, List
 import urwid
+from soladm import net
 
 
 Size = Tuple[int, int]
@@ -9,6 +10,25 @@ def format_time(seconds: int) -> str:
     minutes = seconds // 60
     seconds = seconds % 60
     return '{:02}:{:02}'.format(minutes, seconds)
+
+
+def format_team_name(player: net.PlayerInfo) -> str:
+    return ({
+        net.PlayerTeam.NONE:      'none',
+        net.PlayerTeam.ALPHA:     'alpha',
+        net.PlayerTeam.BRAVO:     'bravo',
+        net.PlayerTeam.CHARLIE:   'charlie',
+        net.PlayerTeam.DELTA:     'delta',
+        net.PlayerTeam.SPECTATOR: 'spectator',
+    }[player.team])
+
+
+def format_player_score(player: net.PlayerInfo) -> str:
+    fmt = '{kills}/{deaths}'
+    if player.caps:
+        fmt += ' (+{caps} caps)'
+    return fmt.format(
+        kills=player.kills, deaths=player.deaths, caps=player.caps)
 
 
 class TableColumn(urwid.Pile):

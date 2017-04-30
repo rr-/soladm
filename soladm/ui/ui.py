@@ -81,18 +81,23 @@ class Ui:
             return
         self._refreshed = True
         self._log('-*- Current players:')
-        for player in self._connection.game_info.players:
-            fmt = '-*- {id}. {name} ({ip}, {hwid}, {kills}/{deaths})'
-            if player.caps:
-                fmt += ' (+{caps} caps)'
-            self._log(fmt.format(
-                id=player.id,
-                ip=player.ip,
-                name=player.name,
-                hwid=player.hwid or '-',
-                kills=player.kills,
-                deaths=player.deaths,
-                caps=player.caps))
+        if self._connection.game_info.players:
+            max_nick_length = max(
+                len(player.name)
+                for player in self._connection.game_info.players)
+            for player in self._connection.game_info.players:
+                fmt = (
+                    '-*- {id}. {name:%d} (IP: {ip}, HWID: {hwid}, '
+                    'team: {team}, score: {score})' % max_nick_length)
+                self._log(fmt.format(
+                    id=player.id,
+                    ip=player.ip,
+                    name=player.name,
+                    hwid=player.hwid or '-',
+                    team=common.format_team_name(player),
+                    score=common.format_player_score(player)))
+        else:
+            self._log('-*- (no players)')
 
     def _on_exception(self, exception: Exception) -> None:
         self._log('-*- Exception: {} ({})'.format(type(exception), exception))

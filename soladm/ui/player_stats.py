@@ -57,21 +57,8 @@ class PlayerStats(common.Table):
         for i, player in enumerate(sorted(game_info.players, key=player_sort)):
             self.ids[i].set_text(str(player.id))
             self.names[i].set_text(player.name)
-            self.teams[i].set_text({
-                net.PlayerTeam.NONE:      'none',
-                net.PlayerTeam.ALPHA:     'alpha',
-                net.PlayerTeam.BRAVO:     'bravo',
-                net.PlayerTeam.CHARLIE:   'charlie',
-                net.PlayerTeam.DELTA:     'delta',
-                net.PlayerTeam.SPECTATOR: 'spectator',
-            }[player.team])
+            self.teams[i].set_text(common.format_team_name(player))
             self.pings[i].set_text(str(player.ping))
             self.hwids[i].set_text(player.hwid or '-')
             self.ips[i].set_text(player.ip)
-            fmt = '{kills}/{deaths}'
-            if player.caps:
-                fmt += ' (+{caps} caps)'
-            self.scores[i].set_text(fmt.format(
-                kills=player.kills,
-                deaths=player.deaths,
-                caps=player.caps))
+            self.scores[i].set_text(common.format_player_score(player))
