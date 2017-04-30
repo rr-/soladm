@@ -70,34 +70,59 @@ class GameStats(Table):
     def __init__(self) -> None:
         super().__init__(column_count=2)
 
+        self._shown_game_mode: Optional[net.GameMode] = None
+
         self.game_mode = urwid.Text('')
         self.current_map_name = urwid.Text('')
         self.next_map_name = urwid.Text('')
         self.player_count = urwid.Text('')
         self.time = urwid.Text('')
-        self.scores_header = urwid.Text('')
-        self.scores = {
+        self.max_score = urwid.Text('')
+        self.team_scores_header = urwid.Text('')
+        self.team_scores = {
             net.PlayerTeam.ALPHA: urwid.Text(''),
             net.PlayerTeam.BRAVO: urwid.Text(''),
             net.PlayerTeam.CHARLIE: urwid.Text(''),
             net.PlayerTeam.DELTA: urwid.Text(''),
         }
 
-        self.add_rows([
+        basic_rows: List[Sequence[urwid.Widget]] = [
             [urwid.Text('Game mode'), self.game_mode],
             [urwid.Text('Map'), self.current_map_name],
             [urwid.Text('Next map'), self.next_map_name],
             [urwid.Text('Players'), self.player_count],
             [urwid.Text('Time'), self.time],
+        ]
+        self.add_rows(basic_rows)
+
+        self._no_teams_rows = basic_rows + [
+            [urwid.Text('Max score'), self.max_score],
+        ]
+        self._two_teams_rows = basic_rows + [
             [urwid.Text(''), urwid.Text('')],
-            [urwid.Text('Scores'), self.scores_header],
-            [urwid.Text('Alpha'), self.scores[net.PlayerTeam.ALPHA]],
-            [urwid.Text('Bravo'), self.scores[net.PlayerTeam.BRAVO]],
-            [urwid.Text('Charlie'), self.scores[net.PlayerTeam.CHARLIE]],
-            [urwid.Text('Delta'), self.scores[net.PlayerTeam.DELTA]],
-        ])
+            [urwid.Text('Scores'), self.team_scores_header],
+            [urwid.Text('Alpha'), self.team_scores[net.PlayerTeam.ALPHA]],
+            [urwid.Text('Bravo'), self.team_scores[net.PlayerTeam.BRAVO]],
+        ]
+        self._four_teams_rows = self._two_teams_rows + [
+            [urwid.Text('Charlie'), self.team_scores[net.PlayerTeam.CHARLIE]],
+            [urwid.Text('Delta'), self.team_scores[net.PlayerTeam.DELTA]],
+        ]
 
     def update(self, game_info: net.GameInfo) -> None:
+        if self._shown_game_mode != game_info.game_mode:
+            self._shown_game_mode = game_info.game_mode
+            self.clear_rows()
+            self.add_rows({
+                net.GameMode.DeathMatch: self._no_teams_rows,
+                net.GameMode.PointMatch: self._no_teams_rows,
+                net.GameMode.TeamMatch: self._four_teams_rows,
+                net.GameMode.CaptureTheFlag: self._two_teams_rows,
+                net.GameMode.RamboMatch: self._no_teams_rows,
+                net.GameMode.Infiltration: self._two_teams_rows,
+                net.GameMode.HoldTheFlag: self._two_teams_rows,
+            }[game_info.game_mode])
+
         self.game_mode.set_text({
             net.GameMode.DeathMatch: 'DM',
             net.GameMode.PointMatch: 'PM',
@@ -124,14 +149,14 @@ class GameStats(Table):
                 _format_time(game_info.time_elapsed // 60),
                 _format_time(game_info.time_limit // 60),
                 _format_time(game_info.time_left // 60)))
-        self.scores_header.set_text(
+        self.team_scores_header.set_text(
             '(max: {})'.format(game_info.score_limit))
         for team in (
                 net.PlayerTeam.ALPHA,
                 net.PlayerTeam.CHARLIE,
                 net.PlayerTeam.DELTA,
                 net.PlayerTeam.BRAVO):
-            self.scores[team].set_text(str(game_info.scores[team]))
+            self.team_scores[team].set_text(str(game_info.scores[team]))
 
 
 class PlayerStats(Table):
