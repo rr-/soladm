@@ -171,6 +171,7 @@ class Connection:
         self._writer: Optional[asyncio.StreamWriter] = None
         self._tasks: List[asyncio.Future] = []
 
+        self.on_connecting = event.EventHandler()
         self.on_connect = event.EventHandler()
         self.on_disconnect = event.EventHandler()
         self.on_message = event.EventHandler()
@@ -228,6 +229,7 @@ class Connection:
             await asyncio.sleep(LONG_POLL_INTERVAL)
             return
         self._connected = ConnectionState.CONNECTING
+        self.on_connecting()
         self._reader, self._writer = (
             await asyncio.open_connection(self.host, self.port))
         self._writer.write('{}\r\n'.format(self.password).encode())

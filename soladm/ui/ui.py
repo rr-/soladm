@@ -34,6 +34,7 @@ class MainWidget(urwid.Columns):
 class Ui:
     def __init__(self, connection: net.Connection) -> None:
         self._connection = connection
+        self._connection.on_connecting.append(self._on_connecting)
         self._connection.on_connect.append(self._on_connect)
         self._connection.on_disconnect.append(self._on_disconnect)
         self._connection.on_message.append(self._on_message)
@@ -58,6 +59,10 @@ class Ui:
 
     def _command_accept(self, text: str) -> None:
         asyncio.ensure_future(self._connection.send(text))
+
+    def _on_connecting(self) -> None:
+        self._log('-*- Connecting to {}:{}...'.format(
+            self._connection.host, self._connection.port))
 
     def _on_connect(self) -> None:
         self._log('-*- Connected')
