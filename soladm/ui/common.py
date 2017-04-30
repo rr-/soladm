@@ -18,7 +18,6 @@ class TableColumn(urwid.Pile):
         return (min(limit, maxcol), len(self.contents))
 
 
-
 class Table(urwid.Columns):
     def __init__(self, column_count: int) -> None:
         columns = [(urwid.PACK, TableColumn([])) for i in range(column_count)]

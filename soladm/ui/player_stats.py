@@ -68,12 +68,10 @@ class PlayerStats(common.Table):
             self.pings[i].set_text(str(player.ping))
             self.hwids[i].set_text(player.hwid or '-')
             self.ips[i].set_text(player.ip)
-            self.scores[i].set_text(
-                (
-                    '{kills}/{deaths} (+{caps} caps)'
-                    if player.caps
-                    else '{kills}/{deaths}'
-                ).format(
-                    kills=player.kills,
-                    deaths=player.deaths,
-                    caps=player.caps))
+            fmt = '{kills}/{deaths}'
+            if player.caps:
+                fmt += ' (+{caps} caps)'
+            self.scores[i].set_text(fmt.format(
+                kills=player.kills,
+                deaths=player.deaths,
+                caps=player.caps))
