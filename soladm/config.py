@@ -1,6 +1,9 @@
 import configparser
-from typing import Optional, List
+from typing import Any, Optional, List
 from pathlib import Path
+
+
+_UNUSED = object()
 
 
 class AutoCompleteConfig:
@@ -40,18 +43,38 @@ def read_config(path: Path) -> None:
     ini = configparser.ConfigParser(interpolation=None)
     ini.read_string(path.read_text())
 
-    _config.autocomplete.server_commands = _split_lines(
-        ini.get('autocomplete', 'server_commands', fallback=''))
-    _config.autocomplete.map_names = _split_lines(
-        ini.get('autocomplete', 'map_names', fallback=''))
-    _config.autocomplete.bot_names = _split_lines(
-        ini.get('autocomplete', 'bot_names', fallback=''))
-    _config.connection.host = ini.get('server', 'host', fallback=None)
-    _config.connection.port = ini.getint('server', 'port', fallback=None)
-    _config.connection.password = (
+    tmp: Any
+
+    tmp = ini.get('autocomplete', 'server_commands', fallback=_UNUSED)
+    if tmp != _UNUSED:
+        _config.autocomplete.server_commands = _split_lines(tmp)
+
+    tmp = ini.get('autocomplete', 'map_names', fallback=_UNUSED)
+    if tmp != _UNUSED:
+        _config.autocomplete.map_names = _split_lines(tmp)
+
+    tmp = ini.get('autocomplete', 'bot_names', fallback=_UNUSED)
+    if tmp != _UNUSED:
+        _config.autocomplete.bot_names = _split_lines(tmp)
+
+    tmp = ini.get('server', 'host', fallback=_UNUSED)
+    if tmp != _UNUSED:
+        _config.connection.host = tmp
+
+    tmp = ini.getint('server', 'port', fallback=_UNUSED)
+    if tmp != _UNUSED:
+        _config.connection.port = tmp
+
+    tmp = (
         ini.get('server', 'pass', fallback=None) or
-        ini.get('server', 'password', fallback=None))
-    _config.log.path = ini.get('log', 'path', fallback=None)
+        ini.get('server', 'password', fallback=None) or
+        _UNUSED)
+    if tmp != _UNUSED:
+        _config.connection.password = tmp
+
+    tmp = ini.get('log', 'path', fallback=_UNUSED)
+    if tmp != _UNUSED:
+        _config.log.path = tmp
 
 
 def get_config() -> Config:
