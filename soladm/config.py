@@ -17,10 +17,16 @@ class ConnectionConfig:
         self.password: Optional[str] = None
 
 
+class LogConfig:
+    def __init__(self) -> None:
+        self.path: Optional[str] = None
+
+
 class Config:
     def __init__(self) -> None:
         self.autocomplete = AutoCompleteConfig()
         self.connection = ConnectionConfig()
+        self.log = LogConfig()
 
 
 _config = Config()
@@ -45,6 +51,7 @@ def read_config(path: Path) -> None:
     _config.connection.password = (
         ini.get('server', 'pass', fallback=None) or
         ini.get('server', 'password', fallback=None))
+    _config.log.path = ini.get('log', 'path', fallback=None)
 
 
 def get_config() -> Config:

@@ -13,6 +13,7 @@ DEFAULT_PORT = 23073
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser('Soldat admin client')
     parser.add_argument('-c', '--config', help='path to optional config file')
+    parser.add_argument('-l', '--log', help='path to output logs to')
     parser.add_argument(
         '--host', help='ip or hostname to connect to')
     parser.add_argument(
@@ -53,9 +54,12 @@ def _get_connection_info(args: argparse.Namespace) -> Tuple[str, int, str]:
 def main() -> None:
     args = parse_args()
     _load_config(args.config)
+
+    log_path = args.log or config.get_config().log.path
     host, port, password = _get_connection_info(args)
+
     connection = net.Connection(host, port, password)
-    ui.run(connection)
+    ui.run(connection, Path(log_path) if log_path else None)
 
 
 if __name__ == '__main__':
