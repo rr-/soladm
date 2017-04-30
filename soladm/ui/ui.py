@@ -1,4 +1,5 @@
 import asyncio
+from datetime import datetime
 from typing import Optional
 import urwid
 from soladm import net
@@ -102,7 +103,8 @@ class Ui:
         self._log('-*- Exception: {}'.format(exception))
 
     def _log(self, text: str) -> None:
-        self._main_widget.log_box.body.append(urwid.Text(text))
+        self._main_widget.log_box.body.append(urwid.Text('[{}] {}'.format(
+            datetime.now().strftime('%Y-%m-%d %H:%M:%S'), text)))
         self._main_widget.log_box.scroll_to_bottom()
 
 
