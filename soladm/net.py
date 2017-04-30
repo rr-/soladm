@@ -33,7 +33,7 @@ def _read_bytes(stream: io.BytesIO, size: int) -> bytes:
 
 def _read_var_str(stream: io.BytesIO, size: int) -> str:
     length = _read_u8(stream)
-    assert length < size
+    assert length <= size, 'String is too long ({} vs {})'.format(length, size)
     return stream.read(size)[0:length].decode('latin1')
 
 
