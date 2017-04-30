@@ -11,6 +11,17 @@ SHORT_POLL_INTERVAL = 0.1
 LONG_POLL_INTERVAL = 1
 
 
+def _encode(text: str) -> bytes:
+    return text.encode('utf-8')
+
+
+def _decode(text: bytes) -> str:
+    try:
+        return text.decode('utf-8')  # all text
+    except UnicodeError:
+        return text.decode('latin2')  # map titles
+
+
 def _read_u8(stream: io.BytesIO) -> int:
     return struct.unpack('<B', stream.read(1))[0]
 
@@ -30,7 +41,7 @@ def _read_f32(stream: io.BytesIO) -> int:
 def _read_var_str(stream: io.BytesIO, size: int) -> str:
     length = _read_u8(stream)
     assert length <= size, 'String is too long ({} vs {})'.format(length, size)
-    return stream.read(size)[0:length].decode('latin1')
+    return _decode(stream.read(size)[0:length])
 
 
 class Point:
@@ -197,7 +208,7 @@ class Connection:
     async def send(self, text: str) -> None:
         assert self._connected == ConnectionState.CONNECTED
         assert self._writer
-        self._writer.write((text + '\r\n').encode('latin1'))
+        self._writer.write(_encode(text) + b'\r\n')
         await self._writer.drain()
 
     async def _looped(self, func: Callable[[], Awaitable[None]]) -> None:
@@ -251,7 +262,7 @@ class Connection:
             await asyncio.sleep(SHORT_POLL_INTERVAL)
             return
         assert self._reader
-        line = (await self._reader.readline()).decode('latin1').rstrip('\r\n')
+        line = _decode(await self._reader.readline()).rstrip('\r\n')
         if not line:
             raise ConnectionResetError()
         if line == 'REFRESH':
