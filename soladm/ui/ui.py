@@ -90,7 +90,7 @@ class Ui:
                 caps=player.caps))
 
     def _on_exception(self, exception: Exception) -> None:
-        self._log('-*- Exception: {}'.format(exception))
+        self._log('-*- Exception: {} ({})'.format(type(exception), exception))
 
     def _log(self, text: str) -> None:
         self._main_widget.console.log_box.body.append(
