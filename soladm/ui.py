@@ -136,8 +136,7 @@ class GameStats(Table):
 
 class PlayerStats(Table):
     def __init__(self) -> None:
-        super().__init__(column_count=7)
-        self.add_row([
+        self._header_row = [
             urwid.Text('ID'),
             urwid.Text('Nick'),
             urwid.Text('Team'),
@@ -145,7 +144,11 @@ class PlayerStats(Table):
             urwid.Text('HWID'),
             urwid.Text('IP'),
             urwid.Text('Score'),
-        ])
+        ]
+
+        super().__init__(column_count=len(self._header_row))
+        self.add_row(self._header_row)
+
         self.ids = [urwid.Text('') for i in range(net.MAX_PLAYERS)]
         self.names = [urwid.Text('') for i in range(net.MAX_PLAYERS)]
         self.teams = [urwid.Text('') for i in range(net.MAX_PLAYERS)]
@@ -154,8 +157,10 @@ class PlayerStats(Table):
         self.ips = [urwid.Text('') for i in range(net.MAX_PLAYERS)]
         self.scores = [urwid.Text('') for i in range(net.MAX_PLAYERS)]
 
+        self._visible_rows: List[Sequence[urwid.Widget]] = []
+        self._all_rows: List[Sequence[urwid.Widget]] = []
         for i in range(net.MAX_PLAYERS):
-            self.add_row([
+            self._all_rows.append([
                 self.ids[i],
                 self.names[i],
                 self.teams[i],
@@ -166,6 +171,12 @@ class PlayerStats(Table):
             ])
 
     def update(self, game_info: net.GameInfo) -> None:
+        if len(self._visible_rows) != len(game_info.players):
+            self._visible_rows = self._all_rows[0:len(game_info.players)]
+            self.clear_rows()
+            self.add_row(self._header_row)
+            self.add_rows(self._visible_rows)
+
         for i, player in enumerate(game_info.players):
             self.ids[i].set_text(str(player.id))
             self.names[i].set_text(player.name)
