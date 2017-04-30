@@ -1,192 +1,7 @@
 import re
 from typing import Tuple, List, Iterable
 from soladm import net
-
-
-SERVER_COMMANDS = [
-    '/addbot',
-    '/addbot1',
-    '/addbot2',
-    '/addbot3',
-    '/addbot4',
-    '/map',
-    '/nextmap',
-    '/restart',
-    '/pause',
-    '/unpause',
-    '/kick',
-    '/kicklast',
-    '/ban',
-    '/banlast',
-    '/banip',
-    '/banhw',
-    '/unban',
-    '/unbanhw',
-    '/unbanlast',
-    '/admip',
-    '/adm',
-    '/unadm',
-    '/respawntime',
-    '/minrespawntime',
-    '/maxrespawntime',
-    '/limit',
-    '/maxgrenades',
-    '/bonus',
-    '/timelimit',
-    '/maxplayers',
-    '/friendlyfire',
-    '/password',
-    '/vote%',
-    '/say',
-    '/setteam',
-    '/setteam1',
-    '/setteam2',
-    '/setteam3',
-    '/setteam4',
-    '/loadwep',
-    '/gamemode',
-    '/realistic',
-    '/survival',
-    '/advance',
-    '/kill',
-    '/loadcon',
-    '/loadlist',
-    '/lobby',
-    '/pm',
-    '/gmute',
-    '/ungmute',
-    '/addmap',
-    '/delmap',
-    '/balance',
-    '/tempban',
-    '/bandwidth',
-    '/recompile',
-    '/welcome',
-    '/weaponon',
-    '/weaponoff',
-    '/scripting'
-]
-
-
-BOT_NAMES = [
-    'Admiral',
-    'Billy',
-    'Blain',
-    'Boogie Man',
-    'Commando',
-    'Danko',
-    'D Dave',
-    'Dutch',
-    'John',
-    'Kruger',
-    'Poncho',
-    'Roach',
-    'Sgt. Mac',
-    'Sniper',
-    'Stevie',
-    'Terminator',
-]
-
-
-MAP_NAMES = [
-    'Aero',
-    'Airpirates',
-    'Arena2',
-    'Arena3',
-    'Arena',
-    'Bigfalls',
-    'Blox',
-    'Bridge',
-    'Bunker',
-    'Cambodia',
-    'CrackedBoot',
-    'ctf_Ash',
-    'ctf_B2b',
-    'ctf_Blade',
-    'ctf_Campeche',
-    'ctf_Cobra',
-    'ctf_Crucifix',
-    'ctf_Death',
-    'ctf_Division',
-    'ctf_Dropdown',
-    'ctf_Equinox',
-    'ctf_Guardian',
-    'ctf_Hormone',
-    'ctf_IceBeam',
-    'ctf_Kampf',
-    'ctf_Lanubya',
-    'ctf_Laos',
-    'ctf_Mayapan',
-    'ctf_Maya',
-    'ctf_MFM',
-    'ctf_Nuubia',
-    'ctf_Raspberry',
-    'ctf_Rotten',
-    'ctf_Ruins',
-    'ctf_Run',
-    'ctf_Scorpion',
-    'ctf_Snakebite',
-    'ctf_Steel',
-    'ctf_Triumph',
-    'ctf_Viet',
-    'ctf_Voland',
-    'ctf_Wretch',
-    'ctf_X',
-    'Daybreak',
-    'DesertWind',
-    'Factory',
-    'Flashback',
-    'HH',
-    'htf_Arch',
-    'htf_Baire',
-    'htf_Boxed',
-    'htf_Desert',
-    'htf_Dorothy',
-    'htf_Dusk',
-    'htf_Erbium',
-    'htf_Feast',
-    'htf_Mossy',
-    'htf_Muygen',
-    'htf_Niall',
-    'htf_Nuclear',
-    'htf_Prison',
-    'htf_Rubik',
-    'htf_Star',
-    'htf_Tower',
-    'htf_Void',
-    'htf_Vortex',
-    'htf_Zajacz',
-    'inf_Abel',
-    'inf_April',
-    'inf_Argy',
-    'inf_Belltower',
-    'inf_Biologic',
-    'inf_Changeling',
-    'inf_Flute',
-    'inf_Fortress',
-    'inf_Industrial',
-    'inf_Messner',
-    'inf_Moonshine',
-    'inf_Motheaten',
-    'inf_Outpost',
-    'inf_Rescue',
-    'inf_Rise',
-    'inf_Warehouse',
-    'inf_Warlock',
-    'Island2k5',
-    'Jungle',
-    'Krab',
-    'Lagrange',
-    'Leaf',
-    'MrSnowman',
-    'RatCave',
-    'Rok',
-    'RR',
-    'Shau',
-    'Tropiccave',
-    'Unlim',
-    'Veoto',
-]
+from soladm import config
 
 
 def get_affixes(
@@ -209,6 +24,8 @@ def get_affixes(
 def collect(
         players: Iterable[net.PlayerInfo],
         affixes: Iterable[Tuple[str, str, str]]) -> Iterable[str]:
+    cfg = config.get_config()
+
     for prefix, infix, suffix in affixes:
         if not infix:
             continue
@@ -222,17 +39,17 @@ def collect(
                 yield prefix + player.name + suffix
 
         if not prefix:
-            for command in SERVER_COMMANDS:
+            for command in cfg.autocomplete.server_commands:
                 if command.lower().startswith(infix.lower()):
                     yield command + (suffix or ' ')
 
         elif prefix.strip().lower() == '/map':
-            for map_name in MAP_NAMES:
+            for map_name in cfg.autocomplete.map_names:
                 if map_name.lower().startswith(infix.lower()):
                     yield prefix + map_name + suffix
 
         elif prefix.strip().lower() in (
                 '/addbot', '/addbot1', '/addbot2', '/addbot3', '/addbot4'):
-            for bot_name in BOT_NAMES:
+            for bot_name in cfg.autocomplete.bot_names:
                 if bot_name.lower().startswith(infix.lower()):
                     yield prefix + bot_name + suffix
