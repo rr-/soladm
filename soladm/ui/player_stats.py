@@ -4,16 +4,20 @@ from soladm import net
 from soladm.ui import common
 
 
+def _pad(text: str, size: int) -> str:
+    return text + ' ' * max(0, size - len(text))
+
+
 class PlayerStats(common.Table):
     def __init__(self) -> None:
         self._header_row = [
-            urwid.Text('ID'),
-            urwid.Text('Nick'),
-            urwid.Text('Team'),
-            urwid.Text('Ping'),
-            urwid.Text('HWID'),
-            urwid.Text('IP'),
-            urwid.Text('Score'),
+            urwid.Text(_pad('ID', 2)),
+            urwid.Text(_pad('Nick', 24)),
+            urwid.Text(_pad('Team', 9)),
+            urwid.Text(_pad('Ping', 4)),
+            urwid.Text(_pad('HWID', 11)),
+            urwid.Text(_pad('IP', 15)),
+            urwid.Text(_pad('Score', 15)),
         ]
 
         super().__init__(column_count=len(self._header_row))
