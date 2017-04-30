@@ -134,13 +134,77 @@ class GameStats(Table):
             self.scores[team].set_text(str(game_info.scores[team]))
 
 
+class PlayerStats(Table):
+    def __init__(self) -> None:
+        super().__init__(column_count=7)
+        self.add_row([
+            urwid.Text('ID'),
+            urwid.Text('Nick'),
+            urwid.Text('Team'),
+            urwid.Text('Ping'),
+            urwid.Text('HWID'),
+            urwid.Text('IP'),
+            urwid.Text('Score'),
+        ])
+        self.ids = [urwid.Text('') for i in range(net.MAX_PLAYERS)]
+        self.names = [urwid.Text('') for i in range(net.MAX_PLAYERS)]
+        self.teams = [urwid.Text('') for i in range(net.MAX_PLAYERS)]
+        self.pings = [urwid.Text('') for i in range(net.MAX_PLAYERS)]
+        self.hwids = [urwid.Text('') for i in range(net.MAX_PLAYERS)]
+        self.ips = [urwid.Text('') for i in range(net.MAX_PLAYERS)]
+        self.scores = [urwid.Text('') for i in range(net.MAX_PLAYERS)]
+
+        for i in range(net.MAX_PLAYERS):
+            self.add_row([
+                self.ids[i],
+                self.names[i],
+                self.teams[i],
+                self.pings[i],
+                self.hwids[i],
+                self.ips[i],
+                self.scores[i],
+            ])
+
+    def update(self, game_info: net.GameInfo) -> None:
+        for i, player in enumerate(game_info.players):
+            self.ids[i].set_text(str(player.id))
+            self.names[i].set_text(player.name)
+            self.teams[i].set_text({
+                net.PlayerTeam.NONE: 'none',
+                net.PlayerTeam.ALPHA: 'alpha',
+                net.PlayerTeam.BRAVO: 'bravo',
+                net.PlayerTeam.CHARLIE: 'charlie',
+                net.PlayerTeam.DELTA: 'delta',
+                net.PlayerTeam.SPECTATOR: 'spectator',
+            }[player.team])
+            self.pings[i].set_text(str(player.ping))
+            self.hwids[i].set_text(player.hwid)
+            self.ips[i].set_text(player.ip)
+            self.scores[i].set_text(
+                (
+                    '{kills}/{deaths} (+{caps} caps)'
+                    if player.caps
+                    else '{kills}/{deaths}'
+                ).format(
+                    kills=player.kills,
+                    deaths=player.deaths,
+                    caps=player.caps))
+
+
 class MainWidget(urwid.Pile):
     def __init__(self) -> None:
         self.stats_table = GameStats()
+        self.players_table = PlayerStats()
         self.log_box = ExtendedListBox(urwid.SimpleListWalker([]))
         self.input_box = CommandInput('', wrap=urwid.CLIP)
         super().__init__([
-            (urwid.PACK, self.stats_table),
+            (
+                urwid.PACK,
+                urwid.Columns([
+                    urwid.LineBox(self.stats_table, title='Game stats'),
+                    urwid.LineBox(self.players_table, title='Players'),
+                ]),
+            ),
             self.log_box,
             (urwid.PACK, self.input_box)])
         self.set_focus(2)
@@ -190,6 +254,7 @@ class Ui:
 
     def _on_refresh(self, game_info: net.GameInfo) -> None:
         self._main_widget.stats_table.update(game_info)
+        self._main_widget.players_table.update(game_info)
 
     def _on_exception(self, exception: Exception) -> None:
         self._log('-*- Exception: {}'.format(exception))

@@ -6,6 +6,7 @@ from enum import IntEnum
 from soladm import event
 
 
+MAX_PLAYERS = 32
 SHORT_POLL_INTERVAL = 0.1
 LONG_POLL_INTERVAL = 1
 
@@ -90,7 +91,7 @@ class GameInfo:
         self.time_left = 0
         self.time_limit = 0
         self.score_limit = 0
-        self._players = [PlayerInfo() for i in range(32)]
+        self._players = [PlayerInfo() for i in range(MAX_PLAYERS)]
         self.red_flag_pos = Point()
         self.blue_flag_pos = Point()
         self.max_players = 0
@@ -111,28 +112,28 @@ class GameInfo:
 
     def update_from_refreshx_packet(self, data: bytes) -> None:
         stream = io.BytesIO(data)
-        for i in range(32):
+        for i in range(MAX_PLAYERS):
             self._players[i].name = _read_var_str(stream, 24)
-        for i in range(32):
+        for i in range(MAX_PLAYERS):
             self._players[i].hwid = _read_bytes(stream, 12)
-        for i in range(32):
+        for i in range(MAX_PLAYERS):
             self._players[i].team = PlayerTeam(_read_u8(stream))
-        for i in range(32):
+        for i in range(MAX_PLAYERS):
             self._players[i].kills = _read_u16_le(stream)
-        for i in range(32):
+        for i in range(MAX_PLAYERS):
             self._players[i].caps = _read_u8(stream)
-        for i in range(32):
+        for i in range(MAX_PLAYERS):
             self._players[i].deaths = _read_u16_le(stream)
-        for i in range(32):
+        for i in range(MAX_PLAYERS):
             self._players[i].ping = _read_u32_le(stream)
-        for i in range(32):
+        for i in range(MAX_PLAYERS):
             self._players[i].id = _read_u8(stream)
-        for i in range(32):
+        for i in range(MAX_PLAYERS):
             self._players[i].ip = '.'.join(
                 str(octet) for octet in [_read_u8(stream) for i in range(4)])
-        for i in range(32):
+        for i in range(MAX_PLAYERS):
             self._players[i].pos.x = _read_f32(stream)
-        for i in range(32):
+        for i in range(MAX_PLAYERS):
             self._players[i].pos.y = _read_f32(stream)
 
         self.red_flag_pos.x = _read_f32(stream)
