@@ -99,6 +99,10 @@ class GameInfo:
         self.next_map_name = ''
 
     @property
+    def time_elapsed(self) -> int:
+        return self.time_limit - self.time_left
+
+    @property
     def players(self) -> List[PlayerInfo]:
         return [
             player
