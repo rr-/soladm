@@ -1,10 +1,9 @@
 import asyncio
 from datetime import datetime
-from typing import Optional
 import urwid
 from soladm import net
 from soladm.ui import common
-from soladm.ui.command_input import CommandInput
+from soladm.ui.console import Console
 from soladm.ui.game_stats import GameStats
 from soladm.ui.player_stats import PlayerStats
 
@@ -13,8 +12,7 @@ class MainWidget(urwid.Columns):
     def __init__(self, game_info: net.GameInfo) -> None:
         self.stats_table = GameStats()
         self.players_table = PlayerStats()
-        self.log_box = common.ExtendedListBox(urwid.SimpleListWalker([]))
-        self.input_box = CommandInput(game_info)
+        self.console = Console(game_info)
         super().__init__([
             (
                 urwid.PACK,
@@ -27,20 +25,10 @@ class MainWidget(urwid.Columns):
                     common.PackedLineBox(self.players_table, title='Players'),
                 ]),
             ),
-            urwid.LineBox(
-                urwid.Pile([self.log_box, (urwid.PACK, self.input_box)]),
-                title='Console'),
+            urwid.LineBox(self.console, title='Console'),
         ])
         self.contents[1][0].original_widget.set_focus(1)
         self.set_focus(1)
-
-    def keypress(self, size: common.Size, key: str) -> Optional[str]:
-        if key in ('page up', 'page down'):
-            self.log_box.keypress(self.get_item_size(size, 0, False), key)
-            self.log_box.auto_scroll = (
-                self.log_box.get_focus()[1] == len(self.log_box.body) - 1)
-            return None
-        return super().keypress(size, key)
 
 
 class Ui:
@@ -55,7 +43,9 @@ class Ui:
 
         self._main_widget = MainWidget(self._connection.game_info)
         urwid.signals.connect_signal(
-            self._main_widget.input_box, 'accept', self._command_accept)
+            self._main_widget.console.input_box,
+            'accept',
+            self._command_accept)
         self._loop = urwid.MainLoop(
             self._main_widget, event_loop=urwid.AsyncioEventLoop())
         self._loop.screen.set_terminal_properties(256)
@@ -103,9 +93,10 @@ class Ui:
         self._log('-*- Exception: {}'.format(exception))
 
     def _log(self, text: str) -> None:
-        self._main_widget.log_box.body.append(urwid.Text('[{}] {}'.format(
-            datetime.now().strftime('%Y-%m-%d %H:%M:%S'), text)))
-        self._main_widget.log_box.scroll_to_bottom()
+        self._main_widget.console.log_box.body.append(
+            urwid.Text('[{}] {}'.format(
+                datetime.now().strftime('%Y-%m-%d %H:%M:%S'), text)))
+        self._main_widget.console.log_box.scroll_to_bottom()
 
 
 def run(connection: net.Connection) -> None:
