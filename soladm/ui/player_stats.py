@@ -59,7 +59,7 @@ class PlayerStats(common.Table):
                 net.PlayerTeam.SPECTATOR: 'spectator',
             }[player.team])
             self.pings[i].set_text(str(player.ping))
-            self.hwids[i].set_text(player.hwid)
+            self.hwids[i].set_text(player.hwid or '-')
             self.ips[i].set_text(player.ip)
             self.scores[i].set_text(
                 (
