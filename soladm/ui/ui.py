@@ -14,7 +14,7 @@ class MainWidget(urwid.Columns):
         self.stats_table = GameStats()
         self.players_table = PlayerStats()
         self.log_box = common.ExtendedListBox(urwid.SimpleListWalker([]))
-        self.input_box = CommandInput('', wrap=urwid.CLIP)
+        self.input_box = CommandInput()
         super().__init__([
             (
                 urwid.PACK,
