@@ -202,7 +202,10 @@ class Connection:
         while True:
             try:
                 await func()
-            except ConnectionResetError as ex:
+            except ConnectionRefusedError:
+                disconnect('Connection refused')
+                await asyncio.sleep(LONG_POLL_INTERVAL)
+            except ConnectionResetError:
                 disconnect('Connection reset')
                 await asyncio.sleep(LONG_POLL_INTERVAL)
             except asyncio.CancelledError:
