@@ -27,10 +27,6 @@ def _read_f32(stream: io.BytesIO) -> int:
     return struct.unpack('<f', stream.read(4))[0]
 
 
-def _read_bytes(stream: io.BytesIO, size: int) -> bytes:
-    return stream.read(size)
-
-
 def _read_var_str(stream: io.BytesIO, size: int) -> str:
     length = _read_u8(stream)
     assert length <= size, 'String is too long ({} vs {})'.format(length, size)
@@ -66,7 +62,7 @@ class GameMode(IntEnum):
 class PlayerInfo:
     def __init__(self) -> None:
         self.id = 0
-        self.hwid = b''
+        self.hwid = ''
         self.name = ''
         self.team = PlayerTeam.NONE
         self.kills = 0
@@ -115,7 +111,7 @@ class GameInfo:
         for i in range(MAX_PLAYERS):
             self._players[i].name = _read_var_str(stream, 24)
         for i in range(MAX_PLAYERS):
-            self._players[i].hwid = _read_bytes(stream, 12)
+            self._players[i].hwid = _read_var_str(stream, 11)
         for i in range(MAX_PLAYERS):
             self._players[i].team = PlayerTeam(_read_u8(stream))
         for i in range(MAX_PLAYERS):
