@@ -1,5 +1,5 @@
 import asyncio
-from typing import Optional, Tuple
+from typing import Optional
 import urwid
 from soladm import net
 from soladm.ui import common
@@ -8,7 +8,7 @@ from soladm.ui.game_stats import GameStats
 from soladm.ui.player_stats import PlayerStats
 
 
-class MainWidget(urwid.Pile):
+class MainWidget(urwid.Columns):
     def __init__(self) -> None:
         self.stats_table = GameStats()
         self.players_table = PlayerStats()
@@ -17,16 +17,23 @@ class MainWidget(urwid.Pile):
         super().__init__([
             (
                 urwid.PACK,
-                urwid.Columns([
-                    urwid.LineBox(self.stats_table, title='Game stats'),
-                    urwid.LineBox(self.players_table, title='Players'),
+                common.TableColumn([
+                    (
+                        urwid.PACK,
+                        common.PackedLineBox(
+                            self.stats_table, title='Game stats')
+                    ),
+                    common.PackedLineBox(self.players_table, title='Players'),
                 ]),
             ),
-            self.log_box,
-            (urwid.PACK, self.input_box)])
-        self.set_focus(2)
+            urwid.LineBox(
+                urwid.Pile([self.log_box, (urwid.PACK, self.input_box)]),
+                title='Console'),
+        ])
+        self.contents[1][0].original_widget.set_focus(1)
+        self.set_focus(1)
 
-    def keypress(self, size: Tuple[int, int], key: str) -> Optional[str]:
+    def keypress(self, size: common.Size, key: str) -> Optional[str]:
         if key in ('page up', 'page down'):
             self.log_box.keypress(self.get_item_size(size, 0, False), key)
             self.log_box.auto_scroll = (
