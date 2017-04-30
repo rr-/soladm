@@ -68,6 +68,26 @@ SERVER_COMMANDS = [
 ]
 
 
+BOT_NAMES = [
+    'Admiral',
+    'Billy',
+    'Blain',
+    'Boogie Man',
+    'Commando',
+    'Danko',
+    'D Dave',
+    'Dutch',
+    'John',
+    'Kruger',
+    'Poncho',
+    'Roach',
+    'Sgt. Mac',
+    'Sniper',
+    'Stevie',
+    'Terminator',
+]
+
+
 MAP_NAMES = [
     'Aero',
     'Airpirates',
@@ -206,7 +226,13 @@ def collect(
                 if command.lower().startswith(infix.lower()):
                     yield command + (suffix or ' ')
 
-        if prefix.strip().lower() == '/map':
+        elif prefix.strip().lower() == '/map':
             for map_name in MAP_NAMES:
                 if map_name.lower().startswith(infix.lower()):
                     yield prefix + map_name + suffix
+
+        elif prefix.strip().lower() in (
+                '/addbot', '/addbot1', '/addbot2', '/addbot3', '/addbot4'):
+            for bot_name in BOT_NAMES:
+                if bot_name.lower().startswith(infix.lower()):
+                    yield prefix + bot_name + suffix
