@@ -50,6 +50,7 @@ class Ui:
         self._connection.on_message.append(self._on_message)
         self._connection.on_refresh.append(self._on_refresh)
         self._connection.on_exception.append(self._on_exception)
+        self._refreshed = False
 
         self._main_widget = MainWidget()
         urwid.signals.connect_signal(
@@ -79,6 +80,23 @@ class Ui:
     def _on_refresh(self, game_info: net.GameInfo) -> None:
         self._main_widget.stats_table.update(game_info)
         self._main_widget.players_table.update(game_info)
+
+        if self._refreshed:
+            return
+        self._refreshed = True
+        self._log('-*- Current players:')
+        for player in game_info.players:
+            fmt = '-*- {id}. {name} ({ip}, {hwid}, {kills}/{deaths})'
+            if player.caps:
+                fmt += ' (+{caps} caps)'
+            self._log(fmt.format(
+                id=player.id,
+                ip=player.ip,
+                name=player.name,
+                hwid=player.hwid or '-',
+                kills=player.kills,
+                deaths=player.deaths,
+                caps=player.caps))
 
     def _on_exception(self, exception: Exception) -> None:
         self._log('-*- Exception: {}'.format(exception))
