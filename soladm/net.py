@@ -222,6 +222,9 @@ class Connection:
         while True:
             try:
                 await func()
+            except TimeoutError:
+                disconnect('Connection timeout')
+                await asyncio.sleep(LONG_POLL_INTERVAL)
             except ConnectionRefusedError:
                 disconnect('Connection refused')
                 await asyncio.sleep(LONG_POLL_INTERVAL)
