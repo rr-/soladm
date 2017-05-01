@@ -236,7 +236,6 @@ class Connection:
                 break
             except Exception as ex:
                 self.on_exception(ex)
-                raise
 
     async def _connect(self) -> None:
         if self._connected == ConnectionState.CONNECTED:
