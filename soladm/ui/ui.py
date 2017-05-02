@@ -120,7 +120,7 @@ class Ui:
             return
         try:
             with self._log_path.open('a', encoding='utf-8') as handle:
-                handle.write(prefix + text + '\n')
+                handle.write((prefix + text).rstrip() + '\n')
         except Exception as ex:
             self._log_to_ui('~*~ Error writing log file: {}'.format(ex))
 
@@ -129,7 +129,7 @@ class Ui:
             if pattern.match(text):
                 return
         self._main_widget.console.log_box.body.append(
-            urwid.Text(prefix + text))
+            urwid.Text((prefix + text).rstrip()))
         self._main_widget.console.log_box.scroll_to_bottom()
 
 
