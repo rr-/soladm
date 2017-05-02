@@ -10,14 +10,26 @@ from soladm import ui
 DEFAULT_PORT = 23073
 
 
+class HelpFormatter(argparse.HelpFormatter):
+    def _format_action_invocation(self, action):
+        if not action.option_strings or action.nargs == 0:
+            return super()._format_action_invocation(action)
+        default = self._get_default_metavar_for_optional(action)
+        args_string = self._format_args(action, default)
+        return ', '.join(action.option_strings) + ' ' + args_string
+
+
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(
         'Soldat admin client',
         epilog=(
             'If server credentials are ommitted and are not found in the '
-            'config file, you\'ll be asked for them interactively.'))
-    parser.add_argument('-c', '--config', help='path to optional config file')
-    parser.add_argument('-l', '--log', help='path to output logs to')
+            'config file, you\'ll be asked for them interactively.'),
+        formatter_class=HelpFormatter)
+    parser.add_argument(
+        '-c', '--config', metavar='PATH', help='path to optional config file')
+    parser.add_argument(
+        '-l', '--log', metavar='PATH', help='path to output logs to')
     parser.add_argument(
         '--host', default=None, help='ip or hostname to connect to')
     parser.add_argument(
