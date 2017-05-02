@@ -19,12 +19,12 @@ CLI Soldat Admin Client - control those pesky players.
 - libreadline/"bash" shortcuts in the input field
 - Filtering by regex
 - Showing old logs after restart (up to *n* lines)
+- Bell on regex (can be used for notifications via window decorations like in WeeChat and irssi)
 
 #### To do
 
 - Colors
 - Color schemes (for dark and light terminals)
-- Bell on regex (`!admin`)
 - Ability to connect to different server or with different password
 
 ## Non-features

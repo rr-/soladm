@@ -154,9 +154,10 @@ class Ui:
     def _log_to_ui(self, text: str, prefix: Optional[str] = None) -> None:
         if prefix is None:
             prefix = _get_log_prefix()
-        for pattern in config.ui.filter_regexes:
-            if pattern.match(text):
-                return
+        if any(pattern.match(text) for pattern in config.ui.filter_regexes):
+            return
+        if any(pattern.match(text) for pattern in config.ui.bell_regexes):
+            self._loop.screen.write('\N{BEL}')
         self._main_widget.console.log_box.body.append(
             urwid.Text((prefix + text).rstrip()))
         self._main_widget.console.log_box.scroll_to_bottom()

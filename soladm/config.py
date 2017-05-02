@@ -74,6 +74,7 @@ class UiConfig:
     def __init__(self) -> None:
         self.last_log: int = 0
         self.filter_regexes: List[Pattern] = []
+        self.bell_regexes: List[Pattern] = []
 
     def read(self, ini: configparser.ConfigParser) -> None:
         tmp: Any
@@ -85,6 +86,11 @@ class UiConfig:
         tmp = ini.get('ui', 'filter_regexes', fallback=_UNUSED)
         if tmp != _UNUSED:
             self.filter_regexes = [
+                re.compile(line) for line in _split_lines(tmp)]
+
+        tmp = ini.get('ui', 'bell_regexes', fallback=_UNUSED)
+        if tmp != _UNUSED:
+            self.bell_regexes = [
                 re.compile(line) for line in _split_lines(tmp)]
 
 
