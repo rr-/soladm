@@ -4,8 +4,8 @@ from typing import Optional
 from pathlib import Path
 import urwid
 from soladm import net
-from soladm import config
 from soladm import util
+from soladm.config import config
 from soladm.ui import common
 from soladm.ui.console import Console
 from soladm.ui.game_stats import GameStats
@@ -43,8 +43,7 @@ class Ui:
     def __init__(
             self,
             connection: net.Connection,
-            log_path: Optional[Path],
-            config: config.Config) -> None:
+            log_path: Optional[Path]) -> None:
         self._connection = connection
         self._connection.on_connecting.append(self._on_connecting)
         self._connection.on_connect.append(self._on_connect)
@@ -54,7 +53,6 @@ class Ui:
         self._connection.on_exception.append(self._on_exception)
         self._refreshed = False
         self._log_path = log_path
-        self._config = config
 
         self._main_widget = MainWidget(self._connection.game_info)
         urwid.signals.connect_signal(
@@ -72,7 +70,7 @@ class Ui:
             return
         with self._log_path.open('rb') as handle:
             self._log_to_ui('Start of last log', prefix='')
-            for raw_line in util.tail(handle, self._config.ui.last_log):
+            for raw_line in util.tail(handle, config.ui.last_log):
                 try:
                     line = raw_line.decode('utf-8')
                 except UnicodeDecodeError:
@@ -156,7 +154,7 @@ class Ui:
     def _log_to_ui(self, text: str, prefix: Optional[str] = None) -> None:
         if prefix is None:
             prefix = _get_log_prefix()
-        for pattern in self._config.ui.filter_regexes:
+        for pattern in config.ui.filter_regexes:
             if pattern.match(text):
                 return
         self._main_widget.console.log_box.body.append(
@@ -165,7 +163,7 @@ class Ui:
 
 
 def run(connection: net.Connection, log_path: Optional[Path]) -> None:
-    ui = Ui(connection, log_path, config.get_config())
+    ui = Ui(connection, log_path)
     ui.start()
     loop = asyncio.get_event_loop()
     loop.run_until_complete(connection.open())

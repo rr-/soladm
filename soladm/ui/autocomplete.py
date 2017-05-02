@@ -1,7 +1,7 @@
 import re
 from typing import Tuple, List, Iterable
 from soladm import net
-from soladm import config
+from soladm.config import config
 
 
 def get_affixes(
@@ -24,8 +24,6 @@ def get_affixes(
 def collect(
         players: Iterable[net.PlayerInfo],
         affixes: Iterable[Tuple[str, str, str]]) -> Iterable[str]:
-    cfg = config.get_config()
-
     for prefix, infix, suffix in affixes:
         if not infix:
             continue
@@ -39,17 +37,17 @@ def collect(
                 yield prefix + player.name + suffix
 
         if not prefix:
-            for command in cfg.autocomplete.server_commands:
+            for command in config.autocomplete.server_commands:
                 if command.lower().startswith(infix.lower()):
                     yield command + (suffix or ' ')
 
         elif prefix.strip().lower() == '/map':
-            for map_name in cfg.autocomplete.map_names:
+            for map_name in config.autocomplete.map_names:
                 if map_name.lower().startswith(infix.lower()):
                     yield prefix + map_name + suffix
 
         elif prefix.strip().lower() in (
                 '/addbot', '/addbot1', '/addbot2', '/addbot3', '/addbot4'):
-            for bot_name in cfg.autocomplete.bot_names:
+            for bot_name in config.autocomplete.bot_names:
                 if bot_name.lower().startswith(infix.lower()):
                     yield prefix + bot_name + suffix

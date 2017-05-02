@@ -2,9 +2,9 @@ from getpass import getpass
 import argparse
 from typing import Optional, Tuple
 from pathlib import Path
-from soladm import config
 from soladm import net
 from soladm import ui
+from soladm.config import config
 
 
 DEFAULT_PORT = 23073
@@ -42,23 +42,20 @@ def parse_args() -> argparse.Namespace:
 
 
 def _load_config(user_path: Optional[str]) -> None:
-    config.read_config(
-        Path(__file__).parent.joinpath('data', 'default_config.ini'))
+    config.read(Path(__file__).parent.joinpath('data', 'default_config.ini'))
     if user_path:
-        config.read_config(Path(user_path))
+        config.read(Path(user_path))
 
 
 def _get_connection_info(args: argparse.Namespace) -> Tuple[str, int, str]:
-    cfg = config.get_config()
-
     host: Optional[str] = None
-    host = args.host or cfg.connection.host
+    host = args.host or config.connection.host
     while not host:
         host = input('Enter host: ')
 
-    port: int = args.port or cfg.connection.port or DEFAULT_PORT
+    port: int = args.port or config.connection.port or DEFAULT_PORT
 
-    password: Optional[str] = args.password or cfg.connection.password
+    password: Optional[str] = args.password or config.connection.password
     while not password:
         password = getpass('Enter password: ')
 
@@ -72,7 +69,7 @@ def main() -> None:
     args = parse_args()
     _load_config(args.config)
 
-    log_path = args.log or config.get_config().log.path
+    log_path = args.log or config.log.path
     host, port, password = _get_connection_info(args)
 
     connection = net.Connection(host, port, password)
