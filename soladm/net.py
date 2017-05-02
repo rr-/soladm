@@ -190,26 +190,34 @@ class Connection:
         self.on_exception = event.EventHandler()
 
     async def open(self) -> None:
-        assert self._connected == ConnectionState.DISCONNECTED
-        self._tasks = [
-            asyncio.ensure_future(self._looped(self._connect)),
-            asyncio.ensure_future(self._looped(self._refresh)),
-            asyncio.ensure_future(self._looped(self._read)),
-        ]
+        try:
+            if self._connected != ConnectionState.DISCONNECTED:
+                raise RuntimeError('Already connected!')
+            self._tasks = [
+                asyncio.ensure_future(self._looped(self._connect)),
+                asyncio.ensure_future(self._looped(self._refresh)),
+                asyncio.ensure_future(self._looped(self._read)),
+            ]
+        except Exception as ex:
+            self.on_exception(ex)
 
     async def close(self) -> None:
-        self._connected in (
-            ConnectionState.CONNECTED,
-            ConnectionState.CONNECTING)
-        for task in self._tasks:
-            task.cancel()
-            await task
+        if self._connected in (
+                ConnectionState.CONNECTED,
+                ConnectionState.CONNECTING):
+            for task in self._tasks:
+                task.cancel()
+                await task
 
     async def send(self, text: str) -> None:
-        assert self._connected == ConnectionState.CONNECTED
-        assert self._writer
-        self._writer.write(_encode(text) + b'\r\n')
-        await self._writer.drain()
+        try:
+            if self._connected != ConnectionState.CONNECTED:
+                raise RuntimeError('Not connected.')
+            assert self._writer
+            self._writer.write(_encode(text) + b'\r\n')
+            await self._writer.drain()
+        except Exception as ex:
+            self.on_exception(ex)
 
     async def _looped(self, func: Callable[[], Awaitable[None]]) -> None:
         def disconnect(reason: str) -> None:
