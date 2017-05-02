@@ -1,14 +1,36 @@
 import configparser
 import re
-from typing import Any, Optional, List, Pattern
+from typing import Any, Optional, Tuple, Sequence, List, Dict, Pattern
 from pathlib import Path
 
 
 _UNUSED = object()
 
 
+def _make_pattern(text: str) -> Pattern:
+    text = text.replace('%{PLAYER}', r'([ -~]{1,24})')
+    text = text.replace('%{HWID}', '([0-9A-Fa-f]{11})')
+    text = text.replace(
+        '%{IP}',
+        r'((([1-9]?\d|1\d\d|25[0-5]|2[0-4]\d)\.){3}'
+        r'([1-9]?\d|1\d\d|25[0-5]|2[0-4]\d))')
+    text = text.replace(
+        '%{PORT}',
+        r'([1-9]\d{0,3}|[1-5][0-9]{4}|'
+        r'6[0-4][0-9]{3}|65[0-4][0-9]{2}|655[0-2][0-9]|6553[0-5])')
+    return re.compile(text, re.I)
+
+
 def _split_lines(text: str) -> List[str]:
     return [line.strip() for line in text.split('\n') if line.strip()]
+
+
+def _split_dict(text: str) -> List[Tuple[str, str]]:
+    ret: List[Tuple[str, str]] = []
+    for line in _split_lines(text):
+        key, value = line.split(':', 1)
+        ret.append((key, value.lstrip()))
+    return ret
 
 
 class AutoCompleteConfig:
@@ -75,6 +97,8 @@ class UiConfig:
         self.last_log: int = 0
         self.filter_regexes: List[Pattern] = []
         self.bell_regexes: List[Pattern] = []
+        self.color_assignment_regexes: List[Tuple[str, Pattern]] = {}
+        self.colors: Dict[str, Sequence[str]] = {}
 
     def read(self, ini: configparser.ConfigParser) -> None:
         tmp: Any
@@ -86,12 +110,22 @@ class UiConfig:
         tmp = ini.get('ui', 'filter_regexes', fallback=_UNUSED)
         if tmp != _UNUSED:
             self.filter_regexes = [
-                re.compile(line) for line in _split_lines(tmp)]
+                _make_pattern(line) for line in _split_lines(tmp)]
 
         tmp = ini.get('ui', 'bell_regexes', fallback=_UNUSED)
         if tmp != _UNUSED:
             self.bell_regexes = [
-                re.compile(line) for line in _split_lines(tmp)]
+                _make_pattern(line) for line in _split_lines(tmp)]
+
+        tmp = ini.get('ui', 'color_assignment_regexes', fallback=_UNUSED)
+        if tmp != _UNUSED:
+            self.color_assignment_regexes = [
+                (key, _make_pattern(line))
+                for key, line in _split_dict(tmp)]
+
+        if 'ui.colors' in ini:
+            for key, value in ini['ui.colors'].items():
+                self.colors[key] = value.split(':')
 
 
 class Config:

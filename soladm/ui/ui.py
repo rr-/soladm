@@ -63,7 +63,16 @@ class Ui:
             self._main_widget, event_loop=urwid.AsyncioEventLoop())
         self._loop.screen.set_terminal_properties(256)
 
+        self._load_palette()
         self._load_last_log()
+
+    def _load_palette(self) -> None:
+        palette = [
+            tuple([key] + list(value))
+            for key, value in config.ui.colors.items()
+        ]
+        self._loop.screen.set_terminal_properties(256)
+        self._loop.screen.register_palette(palette)
 
     def _load_last_log(self) -> None:
         if not self._log_path or not self._log_path.exists():
@@ -158,8 +167,14 @@ class Ui:
             return
         if any(pattern.match(text) for pattern in config.ui.bell_regexes):
             self._loop.screen.write('\N{BEL}')
+
+        text_class = 'default'
+        for key, pattern in config.ui.color_assignment_regexes:
+            if pattern.match(text):
+                text_class = key
+
         self._main_widget.console.log_box.body.append(
-            urwid.Text(prefix + text))
+            urwid.Text([('timestamp', prefix), (text_class, text)]))
         self._main_widget.console.log_box.scroll_to_bottom()
 
 
