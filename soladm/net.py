@@ -177,7 +177,7 @@ class Connection:
         self.password = password
 
         self.game_info = GameInfo()
-        self._connected = False
+        self._connected = ConnectionState.DISCONNECTED
         self._reader: Optional[asyncio.StreamReader] = None
         self._writer: Optional[asyncio.StreamWriter] = None
         self._tasks: List[asyncio.Future] = []
