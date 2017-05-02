@@ -3,6 +3,7 @@ import io
 import struct
 from typing import Optional, List, Callable, Awaitable
 from enum import IntEnum
+from soladm import event
 
 
 POLL_INTERVAL = 1
@@ -150,40 +151,22 @@ class GameInfo:
         self.next_map_name = _read_var_str(stream, 16)
 
 
-class State:
-    def __init__(self) -> None:
-        self.game_info = GameInfo()
-
-    def on_connect(self) -> None:
-        print('Connected')
-
-    def on_disconnect(self, reason: str) -> None:
-        print('Disconnected ({})'.format(reason))
-
-    def on_message(self, message: str) -> None:
-        print('Message received', message)
-
-    def on_refresh(self) -> None:
-        print('Refresh')
-        print(self.game_info.map_name)
-
-    def on_refreshx(self) -> None:
-        print('Refresh x')
-        print(self.game_info.map_name)
-
-
 class Connection:
-    def __init__(
-            self, state: State, host: str, port: int, password: str) -> None:
-        self.state = state
+    def __init__(self, host: str, port: int, password: str) -> None:
         self.host = host
         self.port = port
         self.password = password
 
+        self._game_info = GameInfo()
         self._connected = False
         self._reader: Optional[asyncio.StreamReader] = None
         self._writer: Optional[asyncio.StreamWriter] = None
         self._tasks: List[asyncio.Future] = []
+
+        self.on_connect = event.EventHandler()
+        self.on_disconnect = event.EventHandler()
+        self.on_message = event.EventHandler()
+        self.on_refresh = event.EventHandler()
 
     async def open(self) -> None:
         assert not self._connected
@@ -205,7 +188,7 @@ class Connection:
             if self._connected:
                 self._connected = False
                 self._writer = self._reader = None
-                self.state.on_disconnect(reason)
+                self.on_disconnect(reason)
 
         while True:
             try:
@@ -225,7 +208,7 @@ class Connection:
             await asyncio.open_connection(self.host, self.port))
         self._writer.write('{}\r\n'.format(self.password).encode())
         await self._writer.drain()
-        self.state.on_connect()
+        self.on_connect()
         self._connected = True
 
     async def _refresh(self) -> None:
@@ -250,14 +233,7 @@ class Connection:
             _ = await self._reader.readexactly(1188)
         elif line == 'REFRESHX':
             data = await self._reader.readexactly(1992)
-            self.state.game_info.update_from_refreshx_packet(data)
-            self.state.on_refreshx()
+            self._game_info.update_from_refreshx_packet(data)
+            self.on_refresh(self._game_info)
         else:
-            self.state.on_message(line)
-
-
-async def connect(host: str, port: int, password: str) -> Connection:
-    state = State()
-    connection = Connection(state, host, port, password)
-    await connection.open()
-    return connection
+            self.on_message(line)

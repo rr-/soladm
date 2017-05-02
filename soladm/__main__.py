@@ -1,7 +1,6 @@
 from getpass import getpass
-import asyncio
 import configargparse
-from soladm import net
+from soladm import net, ui
 
 
 def parse_args() -> configargparse.Namespace:
@@ -18,13 +17,8 @@ def main() -> None:
     port: int = args.port
     password: str = args.password or getpass('Enter password: ')
 
-    loop = asyncio.get_event_loop()
-    connection = loop.run_until_complete(net.connect(host, port, password))
-    try:
-        loop.run_forever()
-    except KeyboardInterrupt:
-        loop.run_until_complete(connection.close())
-    loop.close()
+    connection = net.Connection(host, port, password)
+    ui.run(connection)
 
 
 if __name__ == '__main__':
