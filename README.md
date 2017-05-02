@@ -18,10 +18,10 @@ CLI Soldat Admin Client - control those pesky players.
 - Command history
 - libreadline/"bash" shortcuts in the input field
 - Filtering by regex
+- Showing old logs after restart (up to *n* lines)
 
 #### To do
 
-- Load last *n* lines from log on startup, if available
 - Colors
 - Color schemes (for dark and light terminals)
 - Bell on regex (`!admin`)

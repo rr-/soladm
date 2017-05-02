@@ -5,10 +5,15 @@ from pathlib import Path
 import urwid
 from soladm import net
 from soladm import config
+from soladm import util
 from soladm.ui import common
 from soladm.ui.console import Console
 from soladm.ui.game_stats import GameStats
 from soladm.ui.player_stats import PlayerStats
+
+
+def _get_log_prefix() -> str:
+    return datetime.now().strftime('[%Y-%m-%d %H:%M:%S] ')
 
 
 class MainWidget(urwid.Columns):
@@ -38,7 +43,8 @@ class Ui:
     def __init__(
             self,
             connection: net.Connection,
-            log_path: Optional[Path]) -> None:
+            log_path: Optional[Path],
+            config: config.Config) -> None:
         self._connection = connection
         self._connection.on_connecting.append(self._on_connecting)
         self._connection.on_connect.append(self._on_connect)
@@ -48,7 +54,7 @@ class Ui:
         self._connection.on_exception.append(self._on_exception)
         self._refreshed = False
         self._log_path = log_path
-        self._config = config.get_config()
+        self._config = config
 
         self._main_widget = MainWidget(self._connection.game_info)
         urwid.signals.connect_signal(
@@ -58,6 +64,28 @@ class Ui:
         self._loop = urwid.MainLoop(
             self._main_widget, event_loop=urwid.AsyncioEventLoop())
         self._loop.screen.set_terminal_properties(256)
+
+        self._load_last_log()
+
+    def _load_last_log(self) -> None:
+        if not self._log_path or not self._log_path.exists():
+            return
+        with self._log_path.open('rb') as handle:
+            self._log_to_ui('Start of last log', prefix='')
+            for raw_line in util.tail(handle, self._config.ui.last_log):
+                try:
+                    line = raw_line.decode('utf-8')
+                except UnicodeDecodeError:
+                    continue
+                if not line:
+                    continue
+                try:
+                    prefix, text = line.split('] ', 1)
+                    prefix += '] '
+                    self._log_to_ui(text, prefix=prefix)
+                except ValueError:
+                    self._log_to_ui('', prefix=line)
+            self._log_to_ui('End of last log', prefix='')
 
     def start(self) -> None:
         self._loop.start()
@@ -111,11 +139,12 @@ class Ui:
         self._log('-*- Exception: {} ({})'.format(type(exception), exception))
 
     def _log(self, text: str) -> None:
-        timestamp_prefix = datetime.now().strftime('[%Y-%m-%d %H:%M:%S] ')
-        self._log_to_ui(timestamp_prefix, text)
-        self._log_to_file(timestamp_prefix, text)
+        self._log_to_ui(text)
+        self._log_to_file(text)
 
-    def _log_to_file(self, prefix: str, text: str) -> None:
+    def _log_to_file(self, text: str, prefix: Optional[str] = None) -> None:
+        if prefix is None:
+            prefix = _get_log_prefix()
         if not self._log_path:
             return
         try:
@@ -124,7 +153,9 @@ class Ui:
         except Exception as ex:
             self._log_to_ui('~*~ Error writing log file: {}'.format(ex))
 
-    def _log_to_ui(self, prefix: str, text: str) -> None:
+    def _log_to_ui(self, text: str, prefix: Optional[str] = None) -> None:
+        if prefix is None:
+            prefix = _get_log_prefix()
         for pattern in self._config.ui.filter_regexes:
             if pattern.match(text):
                 return
@@ -134,7 +165,7 @@ class Ui:
 
 
 def run(connection: net.Connection, log_path: Optional[Path]) -> None:
-    ui = Ui(connection, log_path)
+    ui = Ui(connection, log_path, config.get_config())
     ui.start()
     loop = asyncio.get_event_loop()
     loop.run_until_complete(connection.open())

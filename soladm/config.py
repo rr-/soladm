@@ -28,6 +28,7 @@ class LogConfig:
 
 class UiConfig:
     def __init__(self) -> None:
+        self.last_log: int = 0
         self.filter_regexes: List[Pattern] = []
 
 
@@ -82,6 +83,10 @@ def read_config(path: Path) -> None:
     tmp = ini.get('log', 'path', fallback=_UNUSED)
     if tmp != _UNUSED:
         _config.log.path = tmp
+
+    tmp = ini.getint('ui', 'last_log', fallback=_UNUSED)
+    if tmp != _UNUSED:
+        _config.ui.last_log = tmp
 
     tmp = ini.get('ui', 'filter_regexes', fallback=_UNUSED)
     if tmp != _UNUSED:
