@@ -4,6 +4,7 @@ from typing import Optional
 from pathlib import Path
 import urwid
 from soladm import net
+from soladm import config
 from soladm.ui import common
 from soladm.ui.console import Console
 from soladm.ui.game_stats import GameStats
@@ -47,6 +48,7 @@ class Ui:
         self._connection.on_exception.append(self._on_exception)
         self._refreshed = False
         self._log_path = log_path
+        self._config = config.get_config()
 
         self._main_widget = MainWidget(self._connection.game_info)
         urwid.signals.connect_signal(
@@ -109,18 +111,25 @@ class Ui:
         self._log('-*- Exception: {} ({})'.format(type(exception), exception))
 
     def _log(self, text: str) -> None:
-        text = '[{}] {}'.format(
-            datetime.now().strftime('%Y-%m-%d %H:%M:%S'), text)
-        self._log_to_ui(text)
-        if self._log_path:
-            try:
-                with self._log_path.open('a', encoding='utf-8') as handle:
-                    handle.write(text + '\n')
-            except Exception as ex:
-                self._log_to_ui('~*~ Error writing log file: {}'.format(ex))
+        timestamp_prefix = datetime.now().strftime('%Y-%m-%d %H:%M:%S ')
+        self._log_to_ui(timestamp_prefix, text)
+        self._log_to_file(timestamp_prefix, text)
 
-    def _log_to_ui(self, text: str) -> None:
-        self._main_widget.console.log_box.body.append(urwid.Text(text))
+    def _log_to_file(self, prefix: str, text: str) -> None:
+        if not self._log_path:
+            return
+        try:
+            with self._log_path.open('a', encoding='utf-8') as handle:
+                handle.write(prefix + text + '\n')
+        except Exception as ex:
+            self._log_to_ui('~*~ Error writing log file: {}'.format(ex))
+
+    def _log_to_ui(self, prefix: str, text: str) -> None:
+        for pattern in self._config.ui.filter_regexes:
+            if pattern.match(text):
+                return
+        self._main_widget.console.log_box.body.append(
+            urwid.Text(prefix + text))
         self._main_widget.console.log_box.scroll_to_bottom()
 
 

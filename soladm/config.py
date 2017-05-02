@@ -1,5 +1,6 @@
 import configparser
-from typing import Any, Optional, List
+import re
+from typing import Any, Optional, List, Pattern
 from pathlib import Path
 
 
@@ -25,18 +26,24 @@ class LogConfig:
         self.path: Optional[str] = None
 
 
+class UiConfig:
+    def __init__(self) -> None:
+        self.filter_regexes: List[Pattern] = []
+
+
 class Config:
     def __init__(self) -> None:
         self.autocomplete = AutoCompleteConfig()
         self.connection = ConnectionConfig()
         self.log = LogConfig()
+        self.ui = UiConfig()
 
 
 _config = Config()
 
 
 def _split_lines(text: str) -> List[str]:
-    return [line.strip() for line in text.split('\n')]
+    return [line.strip() for line in text.split('\n') if line.strip()]
 
 
 def read_config(path: Path) -> None:
@@ -75,6 +82,12 @@ def read_config(path: Path) -> None:
     tmp = ini.get('log', 'path', fallback=_UNUSED)
     if tmp != _UNUSED:
         _config.log.path = tmp
+
+    tmp = ini.get('ui', 'filter_regexes', fallback=_UNUSED)
+    if tmp != _UNUSED:
+        _config.ui.filter_regexes = [
+            re.compile(line)
+            for line in _split_lines(tmp)]
 
 
 def get_config() -> Config:

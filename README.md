@@ -17,13 +17,13 @@ CLI Soldat Admin Client - control those pesky players.
 - Configuration via .INI files
 - Command history
 - libreadline/"bash" shortcuts in the input field
+- Filtering by regex
 
 #### To do
 
 - Load last *n* lines from log on startup, if available
 - Colors
 - Color schemes (for dark and light terminals)
-- Filtering by regex
 - Bell on regex (`!admin`)
 - Ability to connect to different server or with different password
 
