@@ -20,11 +20,10 @@ CLI Soldat Admin Client - control those pesky players.
 - Filtering by regex
 - Showing old logs after restart (up to *n* lines)
 - Bell on regex (can be used for notifications via window decorations like in WeeChat and irssi)
-- Configurable colors
+- Configurable colors, color schemes (built-in scheme for dark and light terminals)
 
 #### To do
 
-- Color schemes (for dark and light terminals)
 - Ability to connect to different server or with different password
 
 ## Non-features

@@ -5,6 +5,7 @@ from pathlib import Path
 
 
 _UNUSED = object()
+Palette = Dict[str, Sequence[str]]
 
 
 def _make_pattern(text: str) -> Pattern:
@@ -98,7 +99,8 @@ class UiConfig:
         self.filter_regexes: List[Pattern] = []
         self.bell_regexes: List[Pattern] = []
         self.color_assignment_regexes: List[Tuple[str, Pattern]] = {}
-        self.colors: Dict[str, Sequence[str]] = {}
+        self.color_schemes: Dict[str, Palette] = {}
+        self.colors: Palette = {}
 
     def read(self, ini: configparser.ConfigParser) -> None:
         tmp: Any
@@ -123,9 +125,18 @@ class UiConfig:
                 (key, _make_pattern(line))
                 for key, line in _split_dict(tmp)]
 
-        if 'ui.colors' in ini:
-            for key, value in ini['ui.colors'].items():
-                self.colors[key] = value.split(':')
+        CS_PREFIX = 'ui.colors.'
+        for section_name, section in ini.items():
+            if section_name.startswith(CS_PREFIX):
+                scheme_name = section_name.replace(CS_PREFIX, '')
+                palette: Palette = {}
+                for key, value in section.items():
+                    palette[key] = value.split(':')
+                self.color_schemes[scheme_name] = palette
+
+        tmp = ini.get('ui', 'color_scheme', fallback=_UNUSED)
+        if tmp != _UNUSED:
+            self.colors = self.color_schemes[tmp]
 
 
 class Config:
