@@ -111,7 +111,7 @@ class Ui:
         self._log('-*- Exception: {} ({})'.format(type(exception), exception))
 
     def _log(self, text: str) -> None:
-        timestamp_prefix = datetime.now().strftime('%Y-%m-%d %H:%M:%S ')
+        timestamp_prefix = datetime.now().strftime('[%Y-%m-%d %H:%M:%S] ')
         self._log_to_ui(timestamp_prefix, text)
         self._log_to_file(timestamp_prefix, text)
 
