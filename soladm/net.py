@@ -272,7 +272,7 @@ class Connection:
             await asyncio.sleep(SHORT_POLL_INTERVAL)
             return
         assert self._reader
-        line = _decode(await self._reader.readline()).rstrip('\r\n')
+        line = _decode(await self._reader.readline()).rstrip()
         if not line:
             raise ConnectionResetError()
         if line == 'REFRESH':

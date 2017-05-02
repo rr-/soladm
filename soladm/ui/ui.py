@@ -72,7 +72,7 @@ class Ui:
             self._log_to_ui('Start of last log', prefix='')
             for raw_line in util.tail(handle, config.ui.last_log):
                 try:
-                    line = raw_line.decode('utf-8')
+                    line = raw_line.decode('utf-8').rstrip()
                 except UnicodeDecodeError:
                     continue
                 if not line:
@@ -147,7 +147,7 @@ class Ui:
             return
         try:
             with self._log_path.open('a', encoding='utf-8') as handle:
-                handle.write((prefix + text).rstrip() + '\n')
+                handle.write((prefix + text) + '\n')
         except Exception as ex:
             self._log_to_ui('~*~ Error writing log file: {}'.format(ex))
 
@@ -159,7 +159,7 @@ class Ui:
         if any(pattern.match(text) for pattern in config.ui.bell_regexes):
             self._loop.screen.write('\N{BEL}')
         self._main_widget.console.log_box.body.append(
-            urwid.Text((prefix + text).rstrip()))
+            urwid.Text(prefix + text))
         self._main_widget.console.log_box.scroll_to_bottom()
 
 
