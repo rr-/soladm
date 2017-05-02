@@ -11,16 +11,21 @@ DEFAULT_PORT = 23073
 
 
 def parse_args() -> argparse.Namespace:
-    parser = argparse.ArgumentParser('Soldat admin client')
+    parser = argparse.ArgumentParser(
+        'Soldat admin client',
+        epilog=(
+            'If server credentials are ommitted and are not found in the '
+            'config file, you\'ll be asked for them interactively.'))
     parser.add_argument('-c', '--config', help='path to optional config file')
     parser.add_argument('-l', '--log', help='path to output logs to')
     parser.add_argument(
-        '--host', help='ip or hostname to connect to')
+        '--host', default=None, help='ip or hostname to connect to')
     parser.add_argument(
-        '--port', type=int, help='default: {}'.format(DEFAULT_PORT))
+        '--port', type=int, default=None,
+        help='port to connect on (default: {})'.format(DEFAULT_PORT))
     parser.add_argument(
-        '--pass', dest='password', default='',
-        help='if ommitted, you\'ll be asked for it interactively')
+        '--pass', dest='password', default=None,
+        help='server password to connect with')
     return parser.parse_args()
 
 
