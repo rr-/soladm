@@ -10,6 +10,7 @@ class GameStats(common.Table):
 
         self._shown_game_mode: Optional[net.GameMode] = None
 
+        self.server = urwid.Text('')
         self.game_mode = urwid.Text('')
         self.current_map_name = urwid.Text('')
         self.next_map_name = urwid.Text('')
@@ -25,6 +26,8 @@ class GameStats(common.Table):
         }
 
         basic_rows: List[Sequence[urwid.Widget]] = [
+            [urwid.Text('Server'), self.server],
+            [urwid.Text(''), urwid.Text('')],
             [urwid.Text('Game mode'), self.game_mode],
             [urwid.Text('Map'), self.current_map_name],
             [urwid.Text('Next map'), self.next_map_name],
@@ -47,7 +50,11 @@ class GameStats(common.Table):
             [urwid.Text('Delta'), self.team_scores[net.PlayerTeam.DELTA]],
         ]
 
-    def update(self, game_info: net.GameInfo) -> None:
+    def update(self, connection: net.Connection) -> None:
+        game_info = connection.game_info
+
+        self.server.set_text('{}:{}'.format(connection.host, connection.port))
+
         if self._shown_game_mode != game_info.game_mode:
             self._shown_game_mode = game_info.game_mode
             self.clear_rows()

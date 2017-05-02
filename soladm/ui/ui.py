@@ -82,7 +82,7 @@ class Ui:
         self._log(message)
 
     def _on_refresh(self) -> None:
-        self._main_widget.stats_table.update(self._connection.game_info)
+        self._main_widget.stats_table.update(self._connection)
         self._main_widget.players_table.update(self._connection.game_info)
 
         if self._refreshed:
