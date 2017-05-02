@@ -55,9 +55,17 @@ class PlayerStats(common.Table):
             return (player.team, player.id)
 
         for i, player in enumerate(sorted(game_info.players, key=player_sort)):
+            cls = {
+                net.PlayerTeam.NONE: 'player_list_none',
+                net.PlayerTeam.ALPHA: 'player_list_alpha',
+                net.PlayerTeam.BRAVO: 'player_list_bravo',
+                net.PlayerTeam.CHARLIE: 'player_list_charlie',
+                net.PlayerTeam.DELTA: 'player_list_delta',
+                net.PlayerTeam.SPECTATOR: 'player_list_spec',
+            }[player.team]
             self.ids[i].set_text(str(player.id))
             self.names[i].set_text(player.name)
-            self.teams[i].set_text(common.format_team_name(player))
+            self.teams[i].set_text((cls, common.format_team_name(player)))
             self.pings[i].set_text(str(player.ping))
             self.hwids[i].set_text(player.hwid or '-')
             self.ips[i].set_text(player.ip)
