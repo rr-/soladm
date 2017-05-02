@@ -32,7 +32,16 @@ CLI Soldat Admin Client - control those pesky players.
 - No Soldat TV: might add ASCII art renderer, when all other features are finished
 - No multiple connections: use terminal multiplexer such as `tmux` or `screen`.
 
-## Config file
+## Usage
+
+```
+$ git clone https://github.com/rr-/soladm
+$ cd soladm
+$ pip install --user --upgrade .
+$ soladm --help
+```
+
+#### Config file
 
 For structure of the .INI file please refer to the [default configuration
 file](soladm/data/default_config.ini).
