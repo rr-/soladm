@@ -22,6 +22,7 @@ class MainWidget(urwid.Columns):
         self.players_table = PlayerStats()
         self.console = Console(game_info)
         super().__init__([
+            urwid.LineBox(self.console, title='Console'),
             (
                 urwid.PACK,
                 common.TableColumn([
@@ -33,10 +34,9 @@ class MainWidget(urwid.Columns):
                     common.PackedLineBox(self.players_table, title='Players'),
                 ]),
             ),
-            urwid.LineBox(self.console, title='Console'),
         ])
-        self.contents[1][0].original_widget.set_focus(1)
-        self.set_focus(1)
+        self.contents[0][0].original_widget.set_focus(1)
+        self.set_focus(0)
 
 
 class Ui:
