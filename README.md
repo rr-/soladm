@@ -57,6 +57,7 @@ Key                             | Action
 <kbd>shift tab</kbd>            | cycle autocomplete (reverse direction)
 <kbd>page up</kbd>              | scroll console up by one page
 <kbd>page down</kbd>            | scroll console down by one page
+<kbd>ctrl l</kbd>               | clear console
 
 ## Keyboard shortcuts (readline compatibility)
 

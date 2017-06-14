@@ -12,6 +12,9 @@ class Console(urwid.Pile):
         super().__init__([self.log_box, (urwid.PACK, self.input_box)])
 
     def keypress(self, size: common.Size, key: str) -> Optional[str]:
+        if key == 'ctrl l':
+            self.log_box.body.clear()
+            return None
         if key in ('page up', 'page down'):
             return self.log_box.keypress(
                 self.get_item_size(size, 0, False), key)
