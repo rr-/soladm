@@ -12,10 +12,6 @@ class Console(urwid.Pile):
         super().__init__([self.log_box, (urwid.PACK, self.input_box)])
 
     def keypress(self, size: common.Size, key: str) -> Optional[str]:
-        if key == 'meta b':
-            return self.keypress(size, 'page up')
-        if key == 'meta f':
-            return self.keypress(size, 'page down')
         if key in ('page up', 'page down'):
             return self.log_box.keypress(
                 self.get_item_size(size, 0, False), key)

@@ -47,16 +47,16 @@ file](soladm/data/default_config.ini).
 
 ## Keyboard shortcuts
 
-Key                                     | Action
----                                     | ---
-<kbd>ctrl q</kbd>                       | quit
-<kbd>ctrl c</kbd>                       | quit
-<kbd>ctrl p</kbd>, <kbd>↑</kbd>         | previous command
-<kbd>ctrl n</kbd>, <kbd>↓</kbd>         | next command
-<kbd>tab</kbd>                          | cycle autocomplete
-<kbd>shift tab</kbd>                    | cycle autocomplete (reverse direction)
-<kbd>meta b</kbd>, <kbd>page up</kbd>   | scroll console up by one page
-<kbd>meta f</kbd>, <kbd>page down</kbd> | scroll console down by one page
+Key                             | Action
+---                             | ---
+<kbd>ctrl q</kbd>               | quit
+<kbd>ctrl c</kbd>               | quit
+<kbd>ctrl p</kbd>, <kbd>↑</kbd> | previous command
+<kbd>ctrl n</kbd>, <kbd>↓</kbd> | next command
+<kbd>tab</kbd>                  | cycle autocomplete
+<kbd>shift tab</kbd>            | cycle autocomplete (reverse direction)
+<kbd>page up</kbd>              | scroll console up by one page
+<kbd>page down</kbd>            | scroll console down by one page
 
 ## Keyboard shortcuts (readline compatibility)
 
