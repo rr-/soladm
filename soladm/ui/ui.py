@@ -56,9 +56,9 @@ class Ui:
 
         self._main_widget = MainWidget(self._connection.game_info)
         urwid.signals.connect_signal(
-            self._main_widget.console.input_box,
-            'accept',
-            self._command_accept)
+            self._main_widget.console.input_box, 'command', self._command)
+        urwid.signals.connect_signal(
+            self._main_widget.console.input_box, 'chat', self._chat)
         self._loop = urwid.MainLoop(
             self._main_widget, event_loop=urwid.AsyncioEventLoop())
         self._loop.screen.set_terminal_properties(256)
@@ -100,9 +100,13 @@ class Ui:
     def stop(self) -> None:
         self._loop.stop()
 
-    def _command_accept(self, text: str) -> None:
+    def _command(self, text: str) -> None:
         self._main_widget.console.log_box.scroll_to_bottom()
         asyncio.ensure_future(self._connection.send(text))
+
+    def _chat(self, text: str) -> None:
+        self._main_widget.console.log_box.scroll_to_bottom()
+        asyncio.ensure_future(self._connection.send('/say ' + text))
 
     def _on_connecting(self) -> None:
         self._log('-*- Connecting to {}:{}...'.format(

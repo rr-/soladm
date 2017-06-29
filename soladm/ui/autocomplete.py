@@ -21,7 +21,7 @@ def get_affixes(
     return list(reversed(ret))
 
 
-def collect(
+def collect_commands(
         players: Iterable[net.PlayerInfo],
         affixes: Iterable[Tuple[str, str, str]]) -> Iterable[str]:
     for prefix, infix, suffix in affixes:
@@ -51,3 +51,18 @@ def collect(
             for bot_name in config.autocomplete.bot_names:
                 if bot_name.lower().startswith(infix.lower()):
                     yield prefix + bot_name + suffix
+
+
+def collect_chat(
+        players: Iterable[net.PlayerInfo],
+        affixes: Iterable[Tuple[str, str, str]]) -> Iterable[str]:
+    for prefix, infix, suffix in affixes:
+        if not infix:
+            continue
+        for player in players:
+            if prefix == '' and \
+                    player.name.lower().startswith(infix.lower()):
+                yield '{}: {}'.format(player.name, suffix)
+            if prefix != '' and \
+                    player.name.lower().startswith(infix.lower()):
+                yield prefix + player.name + suffix

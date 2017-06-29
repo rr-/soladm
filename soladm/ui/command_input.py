@@ -1,15 +1,22 @@
 from typing import Optional, Tuple, List, Iterable
+import enum
 import urwid
 import urwid_readline
 from soladm import net
 from soladm.ui import autocomplete
 
 
+class CommandInputMode(enum.Enum):
+    COMMAND = 1
+    CHAT = 2
+
+
 class CommandInput(urwid_readline.ReadlineEdit):
-    signals = ['accept']
+    signals = ['command', 'chat']
 
     def __init__(self, game_info: net.GameInfo) -> None:
-        super().__init__('Command: ', wrap=urwid.CLIP)
+        super().__init__(wrap=urwid.CLIP)
+        self._mode = CommandInputMode.COMMAND
         self._game_info = game_info
         self._history_idx = -1
         self._history: List[str] = []
@@ -25,6 +32,8 @@ class CommandInput(urwid_readline.ReadlineEdit):
             self._history_down()
         elif key == 'ctrl q':
             raise KeyboardInterrupt()
+        elif key == 'ctrl x':
+            self._cycle_mode()
         elif key == 'tab':
             self._cycle_autocomplete(1)
         elif key == 'shift tab':
@@ -33,6 +42,23 @@ class CommandInput(urwid_readline.ReadlineEdit):
             self._autocomplete_suggestions = []
             return super().keypress(size, key)
         return None
+
+    @property
+    def _mode(self) -> CommandInputMode:
+        return self.__mode
+
+    @_mode.setter
+    def _mode(self, mode: CommandInputMode) -> None:
+        self.__mode = mode
+        if mode == CommandInputMode.COMMAND:
+            self.set_caption('Command: ')
+        elif mode == CommandInputMode.CHAT:
+            self.set_caption('Chat: ')
+
+    def _cycle_mode(self) -> None:
+        modes = list(CommandInputMode)
+        idx = modes.index(self._mode)
+        self._mode = modes[(idx + 1) % len(modes)]
 
     def _cycle_autocomplete(self, delta: int) -> None:
         if not self._autocomplete_suggestions:
@@ -50,8 +76,12 @@ class CommandInput(urwid_readline.ReadlineEdit):
         return autocomplete.get_affixes(self.edit_text, self.edit_pos)
 
     def _collect_autocomplete(self) -> Iterable[str]:
-        return autocomplete.collect(
-            self._game_info.players, self._get_affixes())
+        if self._mode == CommandInputMode.COMMAND:
+            return autocomplete.collect_commands(
+                self._game_info.players, self._get_affixes())
+        else:
+            return autocomplete.collect_chat(
+                self._game_info.players, self._get_affixes())
 
     def _history_up(self) -> None:
         self._history_go(-1)
@@ -78,4 +108,7 @@ class CommandInput(urwid_readline.ReadlineEdit):
         self.set_edit_text('')
         self._history.append(text)
         self._history_idx = len(self._history)
-        urwid.signals.emit_signal(self, 'accept', text)
+        if self._mode == CommandInputMode.COMMAND:
+            urwid.signals.emit_signal(self, 'command', text)
+        elif self._mode == CommandInputMode.CHAT:
+            urwid.signals.emit_signal(self, 'chat', text)

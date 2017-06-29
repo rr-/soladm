@@ -53,6 +53,7 @@ Key                             | Action
 <kbd>ctrl c</kbd>               | quit
 <kbd>ctrl p</kbd>, <kbd>↑</kbd> | previous command
 <kbd>ctrl n</kbd>, <kbd>↓</kbd> | next command
+<kbd>ctrl x</kbd>               | switch input mode (command / chat)
 <kbd>tab</kbd>                  | cycle autocomplete
 <kbd>shift tab</kbd>            | cycle autocomplete (reverse direction)
 <kbd>page up</kbd>              | scroll console up by one page
