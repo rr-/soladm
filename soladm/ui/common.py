@@ -1,4 +1,4 @@
-from typing import Tuple, Sequence, List
+from typing import Optional, Tuple, Sequence, List
 import urwid
 from soladm import net
 
@@ -71,9 +71,15 @@ class ExtendedListBox(urwid.ListBox):
         super().__init__(body)
         self.auto_scroll = True
 
+    def keypress(self, size: Size, key: str) -> Optional[str]:
+        ret = super().keypress(size, key)
+        if key in ('page up', 'page down'):
+            self.auto_scroll = self.get_focus()[1] == len(self.body) - 1
+        return ret
+
     def scroll_to_bottom(self) -> None:
-        if self.auto_scroll:
-            self.set_focus(len(self.body) - 1)
+        self.set_focus(len(self.body) - 1)
+        self.auto_scroll = True
 
 
 class PackedLineBox(urwid.LineBox):

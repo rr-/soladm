@@ -101,6 +101,7 @@ class Ui:
         self._loop.stop()
 
     def _command_accept(self, text: str) -> None:
+        self._main_widget.console.log_box.scroll_to_bottom()
         asyncio.ensure_future(self._connection.send(text))
 
     def _on_connecting(self) -> None:
@@ -175,7 +176,8 @@ class Ui:
 
         self._main_widget.console.log_box.body.append(
             urwid.Text([('timestamp', prefix), (text_class, text)]))
-        self._main_widget.console.log_box.scroll_to_bottom()
+        if self._main_widget.console.log_box.auto_scroll:
+            self._main_widget.console.log_box.scroll_to_bottom()
 
 
 def run(connection: net.Connection, log_path: Optional[Path]) -> None:
